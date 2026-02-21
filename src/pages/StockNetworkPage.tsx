@@ -17,23 +17,52 @@ const TEXT_COLOR = '#e0e0e0';
 const BORDER_COLOR = '#2a2a4a';
 
 // ---- Pipeline step component ----
-const PipelineStep: React.FC<{ label: string; last?: boolean }> = ({ label, last }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+const PIPELINE_ICONS: Record<string, string> = {
+  'Kaggle CSV': '📊',
+  'Google Colab': '🧪',
+  'Databricks': '⚡',
+  'API': '🔗',
+};
+
+const PipelineStep: React.FC<{ label: string; index: number; last?: boolean }> = ({ label, index, last }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
     <div
       style={{
-        padding: '6px 12px',
-        background: '#1e1e3a',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '8px 14px',
+        background: `linear-gradient(135deg, #1e1e3a, #16162e)`,
         border: `1px solid ${BORDER_COLOR}`,
-        borderRadius: 6,
-        color: ACCENT,
+        borderRadius: 8,
+        color: TEXT_COLOR,
         fontSize: 12,
         fontFamily: 'monospace',
         whiteSpace: 'nowrap',
+        transition: 'border-color 0.2s, background 0.2s',
       }}
     >
-      {label}
+      <span style={{ fontSize: 14 }}>{PIPELINE_ICONS[label] ?? '📦'}</span>
+      <div>
+        <div style={{ color: '#888', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 1 }}>
+          Step {index + 1}
+        </div>
+        <div style={{ color: ACCENT, fontWeight: 600 }}>{label}</div>
+      </div>
     </div>
-    {!last && <span style={{ color: '#555', fontSize: 16 }}>&rarr;</span>}
+    {!last && (
+      <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px' }}>
+        <svg width="20" height="12" viewBox="0 0 20 12">
+          <defs>
+            <linearGradient id={`arrow-grad-${index}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={ACCENT} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={ACCENT} stopOpacity={0.7} />
+            </linearGradient>
+          </defs>
+          <path d="M0 6 L14 6 M10 2 L16 6 L10 10" stroke={`url(#arrow-grad-${index})`} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+    )}
   </div>
 );
 
@@ -291,115 +320,242 @@ export default function StockNetworkPage() {
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100%', background: PAGE_BG, color: TEXT_COLOR, fontFamily: 'system-ui, sans-serif' }}>
-      {/* ---- LEFT PANEL (30%) ---- */}
+      {/* ---- LEFT PANEL ---- */}
+      <style>{`
+        .snp-panel::-webkit-scrollbar { width: 4px; }
+        .snp-panel::-webkit-scrollbar-track { background: transparent; }
+        .snp-panel::-webkit-scrollbar-thumb { background: ${BORDER_COLOR}; border-radius: 2px; }
+        .snp-panel::-webkit-scrollbar-thumb:hover { background: ${ACCENT}44; }
+        .snp-sector-row:hover { background: rgba(255,215,0,0.04); }
+        .snp-toggle-btn:hover { color: ${ACCENT} !important; }
+      `}</style>
       <div
+        className="snp-panel"
         style={{
           width: 'clamp(240px, 25vw, 400px)' as any,
           background: PANEL_BG,
           borderRight: `1px solid ${BORDER_COLOR}`,
           overflowY: 'auto',
-          padding: 20,
+          padding: 0,
           display: 'flex',
           flexDirection: 'column',
-          gap: 24,
+          gap: 0,
         }}
       >
+        {/* Panel Header */}
+        <div style={{
+          padding: '16px 20px 12px',
+          borderBottom: `1px solid ${BORDER_COLOR}`,
+          background: 'linear-gradient(180deg, #141430 0%, #0f0f23 100%)',
+        }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: ACCENT, letterSpacing: 0.5 }}>
+            Stock Network
+          </h2>
+          <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
+            {filteredStocks.length} stocks &middot; {filteredEdges.length} correlations
+          </div>
+        </div>
+
         {/* Model Pipeline */}
-        <div>
-          <h3 style={{ color: ACCENT, fontSize: 14, margin: '0 0 12px', letterSpacing: 1, textTransform: 'uppercase' }}>
-            Model Pipeline
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_COLOR}` }}>
+          <h3 style={{ color: '#ccc', fontSize: 11, margin: '0 0 12px', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>
+            Data Pipeline
           </h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-            <PipelineStep label="Kaggle CSV" />
-            <PipelineStep label="Google Colab" />
-            <PipelineStep label="Databricks" />
-            <PipelineStep label="API" last />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+            <PipelineStep label="Kaggle CSV" index={0} />
+            <PipelineStep label="Google Colab" index={1} />
+            <PipelineStep label="Databricks" index={2} />
+            <PipelineStep label="API" index={3} last />
           </div>
         </div>
 
         {/* Correlation Threshold */}
-        <div>
-          <h3 style={{ color: ACCENT, fontSize: 14, margin: '0 0 8px', letterSpacing: 1, textTransform: 'uppercase' }}>
-            Correlation Threshold
-          </h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={correlationThreshold}
-              onChange={(e) => setCorrelationThreshold(parseFloat(e.target.value))}
-              style={{ flex: 1, accentColor: ACCENT }}
-            />
-            <span style={{ fontFamily: 'monospace', fontSize: 14, color: ACCENT, minWidth: 36, textAlign: 'right' }}>
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_COLOR}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <h3 style={{ color: '#ccc', fontSize: 11, margin: 0, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>
+              Correlation Threshold
+            </h3>
+            <span style={{
+              fontFamily: 'monospace',
+              fontSize: 13,
+              color: ACCENT,
+              background: '#1e1e3a',
+              padding: '2px 8px',
+              borderRadius: 4,
+              border: `1px solid ${BORDER_COLOR}`,
+              fontWeight: 700,
+            }}>
               {correlationThreshold.toFixed(2)}
             </span>
           </div>
-          <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>
-            {filteredEdges.length} edges shown
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={correlationThreshold}
+            onChange={(e) => setCorrelationThreshold(parseFloat(e.target.value))}
+            style={{ width: '100%', accentColor: ACCENT, height: 4 }}
+          />
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: 10,
+            color: '#666',
+            marginTop: 4,
+            fontFamily: 'monospace',
+          }}>
+            <span>0.00</span>
+            <span style={{ color: '#aaa' }}>{filteredEdges.length} edges</span>
+            <span>1.00</span>
           </div>
         </div>
 
         {/* Sector Filters */}
-        <div>
-          <h3 style={{ color: ACCENT, fontSize: 14, margin: '0 0 8px', letterSpacing: 1, textTransform: 'uppercase' }}>
-            Sector Filters
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {SECTORS.map((sector) => (
-              <label
-                key={sector.name}
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_COLOR}`, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <h3 style={{ color: '#ccc', fontSize: 11, margin: 0, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>
+              Sectors
+            </h3>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                className="snp-toggle-btn"
+                onClick={() => setSelectedSectors(new Set(SECTORS.map((s) => s.name)))}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
+                  background: 'none',
+                  border: 'none',
+                  color: '#888',
+                  fontSize: 10,
                   cursor: 'pointer',
-                  padding: '4px 0',
-                  fontSize: 13,
-                  color: selectedSectors.has(sector.name) ? TEXT_COLOR : '#555',
+                  padding: 0,
+                  fontFamily: 'monospace',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  transition: 'color 0.15s',
                 }}
               >
-                <input
-                  type="checkbox"
-                  checked={selectedSectors.has(sector.name)}
-                  onChange={() => toggleSector(sector.name)}
-                  style={{ accentColor: sector.color }}
-                />
-                <span
+                All
+              </button>
+              <span style={{ color: '#444' }}>|</span>
+              <button
+                className="snp-toggle-btn"
+                onClick={() => setSelectedSectors(new Set())}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#888',
+                  fontSize: 10,
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontFamily: 'monospace',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  transition: 'color 0.15s',
+                }}
+              >
+                None
+              </button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {SECTORS.map((sector) => {
+              const active = selectedSectors.has(sector.name);
+              const count = stocks.filter(s => s.sector === sector.name).length;
+              return (
+                <label
+                  key={sector.name}
+                  className="snp-sector-row"
                   style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: '50%',
-                    background: sector.color,
-                    display: 'inline-block',
-                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                    padding: '6px 8px',
+                    fontSize: 12,
+                    color: active ? TEXT_COLOR : '#555',
+                    borderRadius: 6,
+                    transition: 'color 0.15s, background 0.15s',
                   }}
-                />
-                {sector.name}
-              </label>
-            ))}
+                >
+                  <input
+                    type="checkbox"
+                    checked={active}
+                    onChange={() => toggleSector(sector.name)}
+                    style={{ accentColor: sector.color, margin: 0 }}
+                  />
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: '50%',
+                      background: active ? sector.color : `${sector.color}44`,
+                      display: 'inline-block',
+                      flexShrink: 0,
+                      transition: 'background 0.15s',
+                      boxShadow: active ? `0 0 6px ${sector.color}44` : 'none',
+                    }}
+                  />
+                  <span style={{ flex: 1 }}>{sector.name}</span>
+                  <span style={{ fontSize: 10, color: '#666', fontFamily: 'monospace' }}>{count}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
 
         {/* Highlighted node info */}
-        {highlightedNode && (
-          <div
-            style={{
-              padding: 12,
-              background: '#1e1e3a',
-              borderRadius: 8,
-              border: `1px solid ${ACCENT}44`,
-            }}
-          >
-            <div style={{ fontSize: 14, color: ACCENT, fontWeight: 700, marginBottom: 4 }}>
-              {highlightedNode}
+        {highlightedNode && (() => {
+          const stock = stocks.find(s => s.ticker === highlightedNode);
+          const connCount = highlightLinks.size - 1;
+          return (
+            <div style={{ padding: '16px 20px' }}>
+              <div
+                style={{
+                  padding: 14,
+                  background: 'linear-gradient(135deg, #1e1e3a, #1a1a35)',
+                  borderRadius: 10,
+                  border: `1px solid ${ACCENT}33`,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: stock ? sectorColor(stock.sector) : '#888',
+                    boxShadow: `0 0 8px ${stock ? sectorColor(stock.sector) : '#888'}66`,
+                  }} />
+                  <span style={{ fontSize: 15, color: ACCENT, fontWeight: 700 }}>
+                    {highlightedNode}
+                  </span>
+                </div>
+                {stock && (
+                  <div style={{ fontSize: 12, color: '#aaa', marginBottom: 8 }}>
+                    {stock.company}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 12, fontSize: 11, fontFamily: 'monospace' }}>
+                  <div>
+                    <span style={{ color: '#666' }}>Connections </span>
+                    <span style={{ color: TEXT_COLOR }}>{connCount}</span>
+                  </div>
+                  {stock && (
+                    <>
+                      <div>
+                        <span style={{ color: '#666' }}>Score </span>
+                        <span style={{ color: stock.golden_score >= 3 ? ACCENT : TEXT_COLOR }}>
+                          {stock.golden_score}
+                        </span>
+                      </div>
+                      <div>
+                        <span style={{ color: '#666' }}>Sector </span>
+                        <span style={{ color: sectorColor(stock.sector) }}>{stock.sector}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: '#aaa' }}>
-              {highlightLinks.size - 1} connections above threshold
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* ---- MAIN GRAPH AREA (70%) ---- */}
