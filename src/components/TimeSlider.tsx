@@ -1,0 +1,288 @@
+// ============================================================
+// SweetReturns — Time Slider Overlay
+// Fixed bottom bar with date scrubber, playback controls, speed & mode
+// ============================================================
+
+import React, { useCallback, useMemo } from 'react';
+import { useStore } from '../store/useStore';
+
+const MIN_TS = new Date('2019-01-02').getTime();
+const MAX_TS = new Date('2024-12-31').getTime();
+
+function tsToDateStr(ts: number): string {
+  const d = new Date(ts);
+  return d.toISOString().slice(0, 10);
+}
+
+function dateStrToTs(s: string): number {
+  return new Date(s).getTime();
+}
+
+function formatDisplayDate(s: string): string {
+  const d = new Date(s);
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+const modeColors: Record<string, string> = {
+  historical: '#9370DB',
+  present: '#00FF7F',
+  future: '#FF69B4',
+};
+
+const speedOptions = [1, 5, 10];
+
+export const TimeSlider: React.FC = () => {
+  const timeSlider = useStore((s) => s.timeSlider);
+  const setCurrentDate = useStore((s) => s.setCurrentDate);
+  const setPlayback = useStore((s) => s.setPlayback);
+  const setPlaybackSpeed = useStore((s) => s.setPlaybackSpeed);
+
+  const currentTs = useMemo(() => dateStrToTs(timeSlider.currentDate), [timeSlider.currentDate]);
+
+  const onSliderChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const ts = Number(e.target.value);
+      setCurrentDate(tsToDateStr(ts));
+    },
+    [setCurrentDate],
+  );
+
+  const stepDate = useCallback(
+    (days: number) => {
+      const next = Math.max(MIN_TS, Math.min(MAX_TS, currentTs + days * 86_400_000));
+      setCurrentDate(tsToDateStr(next));
+    },
+    [currentTs, setCurrentDate],
+  );
+
+  const jumpStart = useCallback(() => setCurrentDate(tsToDateStr(MIN_TS)), [setCurrentDate]);
+  const jumpEnd = useCallback(() => setCurrentDate(tsToDateStr(MAX_TS)), [setCurrentDate]);
+
+  const pct = ((currentTs - MIN_TS) / (MAX_TS - MIN_TS)) * 100;
+
+  return (
+    <div style={containerStyle}>
+      {/* Mode indicator */}
+      <div style={modeRowStyle}>
+        <span
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            backgroundColor: modeColors[timeSlider.mode] || '#fff',
+            display: 'inline-block',
+            marginRight: 6,
+            boxShadow: `0 0 6px ${modeColors[timeSlider.mode] || '#fff'}`,
+          }}
+        />
+        <span style={{ fontSize: 11, color: '#ccc', textTransform: 'capitalize', letterSpacing: 1 }}>
+          {timeSlider.mode}
+        </span>
+      </div>
+
+      {/* Current date */}
+      <div style={dateDisplayStyle}>{formatDisplayDate(timeSlider.currentDate)}</div>
+
+      {/* Slider track */}
+      <div style={sliderRowStyle}>
+        <span style={yearLabelStyle}>2019</span>
+        <div style={sliderWrapStyle}>
+          <div
+            style={{
+              ...trackFillStyle,
+              width: `${pct}%`,
+            }}
+          />
+          <input
+            type="range"
+            min={MIN_TS}
+            max={MAX_TS}
+            step={86_400_000}
+            value={currentTs}
+            onChange={onSliderChange}
+            style={rangeInputStyle}
+          />
+        </div>
+        <span style={yearLabelStyle}>2025</span>
+      </div>
+
+      {/* Controls row */}
+      <div style={controlsRowStyle}>
+        {/* Playback buttons */}
+        <div style={btnGroupStyle}>
+          <button style={ctrlBtnStyle} onClick={jumpStart} title="Jump to start">
+            |&laquo;
+          </button>
+          <button style={ctrlBtnStyle} onClick={() => stepDate(-1)} title="Back 1 day">
+            &lsaquo;
+          </button>
+          <button
+            style={{
+              ...ctrlBtnStyle,
+              backgroundColor: timeSlider.isPlaying ? '#FF69B4' : 'rgba(255,255,255,0.12)',
+              color: timeSlider.isPlaying ? '#1a1a2e' : '#FF69B4',
+              fontWeight: 700,
+              minWidth: 52,
+            }}
+            onClick={() => setPlayback(!timeSlider.isPlaying)}
+            title={timeSlider.isPlaying ? 'Pause' : 'Play'}
+          >
+            {timeSlider.isPlaying ? '\u275A\u275A' : '\u25B6'}
+          </button>
+          <button style={ctrlBtnStyle} onClick={() => stepDate(1)} title="Forward 1 day">
+            &rsaquo;
+          </button>
+          <button style={ctrlBtnStyle} onClick={jumpEnd} title="Jump to end">
+            &raquo;|
+          </button>
+        </div>
+
+        {/* Speed selector */}
+        <div style={btnGroupStyle}>
+          {speedOptions.map((spd) => (
+            <button
+              key={spd}
+              style={{
+                ...speedBtnStyle,
+                backgroundColor:
+                  timeSlider.playbackSpeed === spd ? '#FFD700' : 'rgba(255,255,255,0.08)',
+                color: timeSlider.playbackSpeed === spd ? '#1a1a2e' : '#aaa',
+              }}
+              onClick={() => setPlaybackSpeed(spd)}
+            >
+              {spd}x
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --------------- Styles ---------------
+
+const containerStyle: React.CSSProperties = {
+  position: 'fixed',
+  bottom: 0,
+  left: 0,
+  width: '100%',
+  height: 80,
+  background: 'rgba(26, 26, 46, 0.9)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  borderTop: '1px solid rgba(255, 105, 180, 0.25)',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1000,
+  padding: '4px 20px',
+  boxSizing: 'border-box',
+  fontFamily: "'Inter', 'Segoe UI', sans-serif",
+};
+
+const modeRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  position: 'absolute',
+  top: 6,
+  right: 20,
+};
+
+const dateDisplayStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: '#FF69B4',
+  letterSpacing: 0.5,
+  marginBottom: 2,
+  textShadow: '0 0 8px rgba(255,105,180,0.4)',
+};
+
+const sliderRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  width: '100%',
+  maxWidth: 720,
+  gap: 8,
+};
+
+const yearLabelStyle: React.CSSProperties = {
+  fontSize: 10,
+  color: '#888',
+  minWidth: 30,
+  textAlign: 'center',
+};
+
+const sliderWrapStyle: React.CSSProperties = {
+  position: 'relative',
+  flex: 1,
+  height: 18,
+  display: 'flex',
+  alignItems: 'center',
+};
+
+const trackFillStyle: React.CSSProperties = {
+  position: 'absolute',
+  left: 0,
+  top: '50%',
+  transform: 'translateY(-50%)',
+  height: 4,
+  borderRadius: 2,
+  background: 'linear-gradient(90deg, #9370DB, #FF69B4)',
+  pointerEvents: 'none',
+};
+
+const rangeInputStyle: React.CSSProperties = {
+  width: '100%',
+  height: 4,
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  background: 'rgba(255,255,255,0.1)',
+  borderRadius: 2,
+  outline: 'none',
+  cursor: 'pointer',
+  position: 'relative',
+  zIndex: 1,
+};
+
+const controlsRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 16,
+  marginTop: 2,
+};
+
+const btnGroupStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+};
+
+const ctrlBtnStyle: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.08)',
+  border: '1px solid rgba(255,105,180,0.3)',
+  borderRadius: 4,
+  color: '#FF69B4',
+  fontSize: 13,
+  padding: '2px 8px',
+  cursor: 'pointer',
+  lineHeight: 1.4,
+  transition: 'background 0.15s',
+};
+
+const speedBtnStyle: React.CSSProperties = {
+  border: '1px solid rgba(255,215,0,0.3)',
+  borderRadius: 4,
+  fontSize: 11,
+  padding: '2px 8px',
+  cursor: 'pointer',
+  fontWeight: 600,
+  transition: 'background 0.15s',
+};
+
+export default TimeSlider;
