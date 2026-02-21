@@ -8,11 +8,14 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { getWhales, type WhaleFund } from '../services/whaleArena';
 import { getLatestChain, type ReasoningChain } from '../services/geminiService';
 import { HamburgerMenu, TopHat, WHALE_ICONS } from './CandyIcons';
+import { useStore } from '../store/useStore';
 
 export function WhaleLeaderboard() {
   const [whales, setWhales] = useState<WhaleFund[]>(getWhales());
   const [chain, setChain] = useState<ReasoningChain | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const geminiEnabled = useStore((s) => s.geminiEnabled);
+  const setGeminiEnabled = useStore((s) => s.setGeminiEnabled);
 
   // Drag state
   const [pos, setPos] = useState({ x: window.innerWidth - 292, y: 56 });
@@ -149,6 +152,28 @@ export function WhaleLeaderboard() {
           </div>
         </div>
       )}
+
+      {/* Gemini AI Toggle */}
+      <button
+        onClick={() => setGeminiEnabled(!geminiEnabled)}
+        style={{
+          width: '100%',
+          marginTop: 6,
+          padding: '5px 0',
+          background: geminiEnabled ? 'rgba(0, 255, 127, 0.1)' : 'rgba(255, 69, 0, 0.1)',
+          border: `1px solid ${geminiEnabled ? 'rgba(0, 255, 127, 0.25)' : 'rgba(255, 69, 0, 0.25)'}`,
+          borderRadius: 4,
+          color: geminiEnabled ? '#00FF7F' : '#FF4500',
+          fontSize: 9,
+          fontWeight: 700,
+          fontFamily: 'monospace',
+          cursor: 'pointer',
+          letterSpacing: '0.5px',
+          transition: 'all 0.2s',
+        }}
+      >
+        GEMINI AI: {geminiEnabled ? 'ON' : 'OFF'}
+      </button>
 
       {/* Expand button for reasoning chain */}
       {chain && (

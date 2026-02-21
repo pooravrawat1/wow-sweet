@@ -83,7 +83,7 @@ export default function GoldenCityPage() {
         <div
           style={{
             position: 'absolute',
-            bottom: 80,
+            bottom: 72,
             left: 16,
             zIndex: 10,
             pointerEvents: 'auto',
@@ -98,7 +98,7 @@ export default function GoldenCityPage() {
         <div
           style={{
             position: 'absolute',
-            bottom: 268,
+            bottom: 260,
             left: 16,
             zIndex: 10,
             pointerEvents: 'auto',

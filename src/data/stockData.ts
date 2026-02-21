@@ -406,7 +406,7 @@ export function generateStockData(): StockData[] {
   }
 
   // Generate random positions using Poisson disk sampling
-  const positions = poissonDiskSample(allCompanies.length, 500, 500, 8.0, rand);
+  const positions = poissonDiskSample(allCompanies.length, 700, 700, 10.0, rand);
 
   for (let globalRank = 0; globalRank < allCompanies.length; globalRank++) {
     const { ticker, company, brandColor, sector } = allCompanies[globalRank];
@@ -571,7 +571,7 @@ export async function loadPipelineData(): Promise<{
   const payload: PipelinePayload = await res.json();
 
   const rand = seededRandom(42);
-  const positions = poissonDiskSample(payload.stocks.length, 500, 500, 8.0, rand);
+  const positions = poissonDiskSample(payload.stocks.length, 700, 700, 10.0, rand);
 
   const stocks: StockData[] = payload.stocks.map((raw, i) => {
     const pos = positions[i] || { x: rand() * 200 - 100, z: rand() * 200 - 100 };

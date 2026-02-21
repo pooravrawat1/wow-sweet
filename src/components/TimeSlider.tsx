@@ -111,28 +111,32 @@ export const TimeSlider: React.FC = () => {
 
   return (
     <div style={containerStyle}>
-      {/* Mode toggle buttons — top right */}
-      <div style={modeRowStyle}>
-        {modes.map((mode) => (
-          <button
-            key={mode}
-            onClick={() => handleModeClick(mode)}
-            style={{
-              ...modeBtnStyle,
-              backgroundColor:
-                timeSlider.mode === mode ? modeColors[mode] : 'rgba(255,255,255,0.06)',
-              color: timeSlider.mode === mode ? '#1a1a2e' : '#888',
-              borderColor:
-                timeSlider.mode === mode ? modeColors[mode] : 'rgba(255,255,255,0.15)',
-            }}
-          >
-            {mode}
-          </button>
-        ))}
-      </div>
+      {/* Top row: mode buttons | date display | date picker | playback | speed */}
+      <div style={topRowStyle}>
+        {/* Mode toggle buttons */}
+        <div style={btnGroupStyle}>
+          {modes.map((mode) => (
+            <button
+              key={mode}
+              onClick={() => handleModeClick(mode)}
+              style={{
+                ...modeBtnStyle,
+                backgroundColor:
+                  timeSlider.mode === mode ? modeColors[mode] : 'rgba(255,255,255,0.06)',
+                color: timeSlider.mode === mode ? '#1a1a2e' : '#888',
+                borderColor:
+                  timeSlider.mode === mode ? modeColors[mode] : 'rgba(255,255,255,0.15)',
+              }}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
 
-      {/* Current date + date picker */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {/* Separator */}
+        <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.15)' }} />
+
+        {/* Date display + picker */}
         <div style={dateDisplayStyle}>{formatDisplayDate(timeSlider.currentDate)}</div>
         <input
           type="date"
@@ -149,45 +153,12 @@ export const TimeSlider: React.FC = () => {
               else setTimeMode('historical');
             }
           }}
-          style={{
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,105,180,0.3)',
-            borderRadius: 4,
-            color: '#FF69B4',
-            fontSize: 10,
-            padding: '2px 6px',
-            cursor: 'pointer',
-            fontFamily: 'monospace',
-            colorScheme: 'dark',
-          }}
+          style={dateInputStyle}
         />
-      </div>
 
-      {/* Slider track */}
-      <div style={sliderRowStyle}>
-        <span style={yearLabelStyle}>2019</span>
-        <div style={sliderWrapStyle}>
-          <div
-            style={{
-              ...trackFillStyle,
-              width: `${pct}%`,
-            }}
-          />
-          <input
-            type="range"
-            min={MIN_TS}
-            max={MAX_TS}
-            step={86_400_000}
-            value={currentTs}
-            onChange={onSliderChange}
-            style={rangeInputStyle}
-          />
-        </div>
-        <span style={yearLabelStyle}>2028</span>
-      </div>
+        {/* Separator */}
+        <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.15)' }} />
 
-      {/* Controls row */}
-      <div style={controlsRowStyle}>
         {/* Playback buttons */}
         <div style={btnGroupStyle}>
           <button style={ctrlBtnStyle} onClick={jumpStart} title="Jump to start">
@@ -202,7 +173,7 @@ export const TimeSlider: React.FC = () => {
               backgroundColor: timeSlider.isPlaying ? '#FF69B4' : 'rgba(255,255,255,0.12)',
               color: timeSlider.isPlaying ? '#1a1a2e' : '#FF69B4',
               fontWeight: 700,
-              minWidth: 52,
+              minWidth: 44,
             }}
             onClick={() => setPlayback(!timeSlider.isPlaying)}
             title={timeSlider.isPlaying ? 'Pause' : 'Play'}
@@ -235,6 +206,29 @@ export const TimeSlider: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Bottom row: slider track */}
+      <div style={sliderRowStyle}>
+        <span style={yearLabelStyle}>2019</span>
+        <div style={sliderWrapStyle}>
+          <div
+            style={{
+              ...trackFillStyle,
+              width: `${pct}%`,
+            }}
+          />
+          <input
+            type="range"
+            min={MIN_TS}
+            max={MAX_TS}
+            step={86_400_000}
+            value={currentTs}
+            onChange={onSliderChange}
+            style={rangeInputStyle}
+          />
+        </div>
+        <span style={yearLabelStyle}>2028</span>
+      </div>
     </div>
   );
 };
@@ -246,8 +240,8 @@ const containerStyle: React.CSSProperties = {
   bottom: 0,
   left: 0,
   width: '100%',
-  height: 72,
-  background: 'rgba(26, 26, 46, 0.9)',
+  height: 64,
+  background: 'rgba(26, 26, 46, 0.92)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
   borderTop: '1px solid rgba(255, 105, 180, 0.25)',
@@ -255,6 +249,7 @@ const containerStyle: React.CSSProperties = {
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
+  gap: 4,
   zIndex: 1000,
   padding: '6px 20px',
   boxSizing: 'border-box',
@@ -262,13 +257,11 @@ const containerStyle: React.CSSProperties = {
   overflow: 'visible',
 };
 
-const modeRowStyle: React.CSSProperties = {
+const topRowStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: 4,
-  position: 'absolute',
-  top: 6,
-  right: 20,
+  gap: 8,
+  flexWrap: 'nowrap',
 };
 
 const modeBtnStyle: React.CSSProperties = {
@@ -285,12 +278,24 @@ const modeBtnStyle: React.CSSProperties = {
 };
 
 const dateDisplayStyle: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 11,
   fontWeight: 600,
   color: '#FF69B4',
   letterSpacing: 0.5,
-  marginBottom: 2,
+  whiteSpace: 'nowrap',
   textShadow: '0 0 8px rgba(255,105,180,0.4)',
+};
+
+const dateInputStyle: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.08)',
+  border: '1px solid rgba(255,105,180,0.3)',
+  borderRadius: 4,
+  color: '#FF69B4',
+  fontSize: 10,
+  padding: '2px 6px',
+  cursor: 'pointer',
+  fontFamily: 'monospace',
+  colorScheme: 'dark',
 };
 
 const sliderRowStyle: React.CSSProperties = {
@@ -338,13 +343,6 @@ const rangeInputStyle: React.CSSProperties = {
   cursor: 'pointer',
   position: 'relative',
   zIndex: 1,
-};
-
-const controlsRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 16,
-  marginTop: 2,
 };
 
 const btnGroupStyle: React.CSSProperties = {

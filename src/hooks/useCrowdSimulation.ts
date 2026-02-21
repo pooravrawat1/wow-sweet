@@ -281,12 +281,16 @@ export function useCrowdSimulation(): CrowdSimulationResult {
   }, [sim.count, stocks, sim.storeIndices]);
 
   // Poll Gemini for featured agent decisions + whale arena
+  const geminiEnabled = useStore((s) => s.geminiEnabled);
+  const geminiRef = useRef(geminiEnabled);
+  geminiRef.current = geminiEnabled;
+
   useEffect(() => {
     if (sim.count === 0 || stocks.length === 0) return;
 
     const runWhaleUpdate = async () => {
       // Update whale allocations (Gemini + algorithmic)
-      await updateWhaleAllocations(stocks, timeModeRef.current);
+      await updateWhaleAllocations(stocks, timeModeRef.current, geminiRef.current);
       // Apply whale directions to agents
       applyWhaleToSimulation(
         stocks, sim.storeIndices, sim.targets, sim.doorPositions,

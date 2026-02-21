@@ -159,10 +159,36 @@ function contrarianAllocations(stocks: StockData[], timeMode: string): WhaleAllo
   return [...shorts, ...longs];
 }
 
+// ── Wonka fallback (golden score picks) ──
+function runWonkaFallback(stocks: StockData[], now: number, forced = false) {
+  const goldenStocks = stocks
+    .filter((s) => s.golden_score >= 2)
+    .sort((a, b) => b.golden_score - a.golden_score)
+    .slice(0, 8);
+
+  if (goldenStocks.length > 0) {
+    const weight = 1.0 / goldenStocks.length;
+    WHALES[0].allocations = goldenStocks.map((s) => ({
+      ticker: s.ticker,
+      weight,
+      action: s.golden_score >= 4
+        ? 'BUY' as const
+        : s.golden_score >= 3
+          ? 'CALL' as const
+          : 'BUY' as const,
+    }));
+    WHALES[0].lastUpdated = now;
+    WHALES[0].reasoning = forced
+      ? `Algorithmic mode: ${goldenStocks.length} golden ticket stocks (Gemini OFF)`
+      : `Fallback mode (no API key): ${goldenStocks.length} golden ticket stocks. Add VITE_GEMINI_API_KEY for full AI.`;
+  }
+}
+
 // ── Update all whales ──
 export async function updateWhaleAllocations(
   stocks: StockData[],
   timeMode: 'historical' | 'present' | 'future' = 'present',
+  useGemini = true,
 ): Promise<void> {
   if (stocks.length === 0) return;
   const now = Date.now();
@@ -189,44 +215,31 @@ export async function updateWhaleAllocations(
     ? `Contrarian: shorting ${shorts} projected winners, buying ${longs} projected losers${modeLabel}`
     : `Fading ${shorts} overbought, buying ${longs} oversold`;
 
-  // Wonka Fund: hierarchical Gemini cycle
-  const geminiAllocs = await runHierarchicalCycle(stocks);
-  if (geminiAllocs.length > 0) {
-    WHALES[0].allocations = geminiAllocs.map((a) => ({
-      ticker: a.ticker,
-      weight: a.weight,
-      action: a.action,
-    }));
-    WHALES[0].lastUpdated = now;
-
-    const chain = getLatestChain();
-    if (chain) {
-      const sectors = chain.sectorReports.length;
-      const risk = chain.riskReview?.overallRisk || 'unknown';
-      WHALES[0].reasoning = `${sectors} analysts -> PM -> Risk(${risk}): ${chain.finalAllocations.length} positions in ${chain.cycleMs}ms`;
-    }
-  } else if (WHALES[0].allocations.length === 0) {
-    // SMART FALLBACK: No Gemini API key or cycle returned empty.
-    // Pick top 8 stocks by golden_score so Wonka agents always have targets.
-    const goldenStocks = stocks
-      .filter((s) => s.golden_score >= 2)
-      .sort((a, b) => b.golden_score - a.golden_score)
-      .slice(0, 8);
-
-    if (goldenStocks.length > 0) {
-      const weight = 1.0 / goldenStocks.length;
-      WHALES[0].allocations = goldenStocks.map((s) => ({
-        ticker: s.ticker,
-        weight,
-        action: s.golden_score >= 4
-          ? 'BUY' as const
-          : s.golden_score >= 3
-            ? 'CALL' as const
-            : 'BUY' as const,
+  // Wonka Fund: hierarchical Gemini cycle (or fallback)
+  if (useGemini) {
+    const geminiAllocs = await runHierarchicalCycle(stocks);
+    if (geminiAllocs.length > 0) {
+      WHALES[0].allocations = geminiAllocs.map((a) => ({
+        ticker: a.ticker,
+        weight: a.weight,
+        action: a.action,
       }));
       WHALES[0].lastUpdated = now;
-      WHALES[0].reasoning = `Fallback mode (no API key): ${goldenStocks.length} golden ticket stocks (score >= 2), sorted by golden_score. Add VITE_GEMINI_API_KEY for full AI analysis.`;
+
+      const chain = getLatestChain();
+      if (chain) {
+        const sectors = chain.sectorReports.length;
+        const risk = chain.riskReview?.overallRisk || 'unknown';
+        WHALES[0].reasoning = `${sectors} analysts -> PM -> Risk(${risk}): ${chain.finalAllocations.length} positions in ${chain.cycleMs}ms`;
+      }
+      // If Gemini returned results, skip fallback
+    } else {
+      // Gemini returned empty (no key or cycle throttled) — use fallback
+      runWonkaFallback(stocks, now);
     }
+  } else {
+    // Gemini explicitly disabled by user
+    runWonkaFallback(stocks, now, true);
   }
 
   // Simulate profit using forward returns

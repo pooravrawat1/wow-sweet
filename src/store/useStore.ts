@@ -61,6 +61,10 @@ interface AppStore {
   simulationSpeed: number;
   setSimulationSpeed: (speed: number) => void;
 
+  // --- Gemini AI toggle ---
+  geminiEnabled: boolean;
+  setGeminiEnabled: (enabled: boolean) => void;
+
   // --- Per-store crowd data (from simulation) ---
   storeAgentCounts: Int16Array;
   storeDoorCounts: Int16Array;
@@ -138,6 +142,10 @@ export const useStore = create<AppStore>((set) => ({
   setAgentCount: (count) => set({ agentCount: count }),
   simulationSpeed: 1,
   setSimulationSpeed: (speed) => set({ simulationSpeed: speed }),
+
+  // Gemini AI toggle
+  geminiEnabled: true,
+  setGeminiEnabled: (enabled) => set({ geminiEnabled: enabled }),
 
   // Per-store crowd data
   storeAgentCounts: new Int16Array(0),
