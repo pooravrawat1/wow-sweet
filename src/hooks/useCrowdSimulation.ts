@@ -19,6 +19,16 @@ import {
   getWhales,
   type WhaleFund,
 } from '../services/whaleArena.ts';
+import { AgentStreamClient } from '../services/websocketClient.ts';
+
+// --- WebSocket flow instruction ---
+interface AgentFlowInstruction {
+  archetype_id: number;
+  target_ticker: string;
+  action: string;
+  confidence: number;
+  swarm_size: number;
+}
 
 // --- Agent state encoding ---
 const STATE_ANALYZING = 0;
@@ -311,6 +321,76 @@ export function useCrowdSimulation(): CrowdSimulationResult {
     return () => { clearInterval(interval); clearTimeout(timeout); };
   }, [sim, stocks]);
 
+  // --- WebSocket integration for backend agent flow instructions ---
+  const wsFlowQueue = useRef<AgentFlowInstruction[]>([]);
+
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    if (!apiUrl) return; // No backend configured, skip WebSocket
+
+    const wsUrl = apiUrl.replace(/^http/, 'ws') + '/ws/agent-stream';
+    const client = new AgentStreamClient(wsUrl);
+
+    client.onMessage((data: any) => {
+      if (data.type === 'agent_flows' && Array.isArray(data.data)) {
+        wsFlowQueue.current.push(...data.data);
+      } else if (data.type === 'breaking_news' && data.agent_reaction?.reactions) {
+        // Convert breaking news reactions into flow instructions
+        for (const reaction of data.agent_reaction.reactions) {
+          wsFlowQueue.current.push({
+            archetype_id: -1,
+            target_ticker: reaction.ticker,
+            action: reaction.action,
+            confidence: reaction.urgency,
+            swarm_size: reaction.agent_count,
+          });
+        }
+      }
+    });
+
+    client.connect().catch(() => {
+      // Backend not available — silent fail, frontend runs standalone
+    });
+
+    return () => { client.disconnect(); };
+  }, []);
+
+  // Process WebSocket flow queue: redirect agents to target stores
+  const applyWsFlows = useCallback(() => {
+    const s = simRef.current;
+    if (!s || s.count === 0 || stocks.length === 0) return;
+
+    while (wsFlowQueue.current.length > 0) {
+      const flow = wsFlowQueue.current.shift()!;
+      const targetStoreIdx = stocks.findIndex((st) => st.ticker === flow.target_ticker);
+      if (targetStoreIdx === -1) continue;
+
+      // Redirect `swarm_size` agents to this store
+      let redirected = 0;
+      const maxRedirect = Math.min(flow.swarm_size, s.count);
+
+      for (let i = 0; i < s.count && redirected < maxRedirect; i++) {
+        // Only redirect agents that are RUSHING or ANALYZING
+        if (s.states[i] !== STATE_RUSHING && s.states[i] !== STATE_ANALYZING) continue;
+
+        const i3 = i * 3;
+        s.storeIndices[i] = targetStoreIdx;
+        s.targets[i3] = s.doorPositions[targetStoreIdx * 2];
+        s.targets[i3 + 1] = 0;
+        s.targets[i3 + 2] = s.doorPositions[targetStoreIdx * 2 + 1];
+        s.urgencies[i] = 0.5 + flow.confidence * 0.5;
+        s.maxSpeeds[i] = 6.0 + flow.confidence * 8.0;
+
+        if (s.states[i] === STATE_ANALYZING) {
+          s.states[i] = STATE_RUSHING;
+          s.stateTimers[i] = 0;
+        }
+
+        redirected++;
+      }
+    }
+  }, [stocks]);
+
   // Pre-allocate entry gating buffer (avoid per-frame allocation)
   const admittedRef = useRef<Uint8Array>(new Uint8Array(0));
 
@@ -326,6 +406,9 @@ export function useCrowdSimulation(): CrowdSimulationResult {
   const update = useCallback((dt: number) => {
     const s = simRef.current;
     if (!s || s.count === 0) return;
+
+    // Process any pending WebSocket flow instructions
+    applyWsFlows();
 
     const grid = gridRef.current;
     const clampedDt = Math.min(dt, 0.05);
@@ -663,7 +746,7 @@ export function useCrowdSimulation(): CrowdSimulationResult {
       }
       s.colors[i4 + 3] = 1.0;
     }
-  }, [stocks, fastRand]);
+  }, [stocks, fastRand, applyWsFlows]);
 
   return {
     positions: sim.positions,
