@@ -246,7 +246,7 @@ const containerStyle: React.CSSProperties = {
   bottom: 0,
   left: 0,
   width: '100%',
-  height: 64,
+  height: 72,
   background: 'rgba(26, 26, 46, 0.9)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
@@ -256,9 +256,10 @@ const containerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: 1000,
-  padding: '4px 20px',
+  padding: '6px 20px',
   boxSizing: 'border-box',
   fontFamily: "'Inter', 'Segoe UI', sans-serif",
+  overflow: 'visible',
 };
 
 const modeRowStyle: React.CSSProperties = {

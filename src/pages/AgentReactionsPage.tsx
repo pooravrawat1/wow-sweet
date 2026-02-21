@@ -3,11 +3,13 @@
 //   Whale leaderboard, agent heatmap, store pressure, decision stream
 // ============================================================
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import * as d3 from 'd3';
 import { useStore } from '../store/useStore';
 import { generateStockData, loadPipelineData, SECTORS } from '../data/stockData';
 import { getWhales, type WhaleFund } from '../services/whaleArena';
 import { getFeaturedAgents, getLatestChain, type FeaturedAgent, type ReasoningChain } from '../services/geminiService';
+import { WHALE_ICONS } from '../components/CandyIcons';
 import type { StockData } from '../types';
 
 const PAGE_BG = '#1a1a2e';
@@ -105,7 +107,7 @@ const Leaderboard: React.FC<{
                 whiteSpace: 'nowrap',
               }}
             >
-              {whale.icon} {whale.name}
+              {WHALE_ICONS[whale.id] || whale.icon} {whale.name}
             </div>
             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>
               {whale.strategy} | {whale.allocations.length} pos | {whale.tradeCount} trades
@@ -204,68 +206,201 @@ const Leaderboard: React.FC<{
 };
 
 // ============================================================
-// Agent Heatmap (center, canvas-based) — real store counts
+// Agent Heatmap (center, D3 treemap) — real store counts
 // ============================================================
+
+// Heat color: blue (cold) -> yellow (warm) -> red (hot)
+function heatColor(t: number): string {
+  // t in [0, 1]
+  const clamped = Math.max(0, Math.min(1, t));
+  if (clamped <= 0.5) {
+    // blue -> yellow
+    const s = clamped * 2; // 0..1
+    const r = Math.round(s * 255);
+    const g = Math.round(s * 255);
+    const b = Math.round(255 * (1 - s));
+    return `rgb(${r},${g},${b})`;
+  } else {
+    // yellow -> red
+    const s = (clamped - 0.5) * 2; // 0..1
+    const r = 255;
+    const g = Math.round(255 * (1 - s));
+    const b = 0;
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+interface TreemapStockNode {
+  ticker: string;
+  sector: string;
+  company: string;
+  index: number;
+  agentCount: number;
+  inside: number;
+  door: number;
+  lanes: { BUY: number; CALL: number; PUT: number; SHORT: number };
+}
+
+interface TooltipData {
+  ticker: string;
+  sector: string;
+  company: string;
+  total: number;
+  inside: number;
+  door: number;
+  lanes: { BUY: number; CALL: number; PUT: number; SHORT: number };
+  x: number;
+  y: number;
+}
+
 const AgentHeatmap: React.FC<{
   stocks: StockData[];
   storeAgentCounts: Int16Array;
   storeDoorCounts: Int16Array;
-}> = ({ stocks, storeAgentCounts, storeDoorCounts }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  storeLaneCounts: Int16Array;
+}> = ({ stocks, storeAgentCounts, storeDoorCounts, storeLaneCounts }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
 
+  // ResizeObserver for responsive sizing
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || stocks.length === 0) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          setDimensions({ width, height });
+        }
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  // Build the treemap layout data
+  const treemapNodes = useMemo(() => {
+    if (stocks.length === 0) return null;
 
-    const cols = Math.ceil(Math.sqrt(stocks.length));
-    const rows = Math.ceil(stocks.length / cols);
-    const cellW = canvas.width / cols;
-    const cellH = canvas.height / rows;
+    // Build per-stock data with agent counts
+    const stockNodes: TreemapStockNode[] = stocks.map((stock, i) => {
+      const inside = i < storeAgentCounts.length ? storeAgentCounts[i] : 0;
+      const door = i < storeDoorCounts.length ? storeDoorCounts[i] : 0;
+      const hasLanes = storeLaneCounts.length > i * 4 + 3;
+      return {
+        ticker: stock.ticker,
+        sector: stock.sector,
+        company: stock.company,
+        index: i,
+        agentCount: inside + door,
+        inside,
+        door,
+        lanes: {
+          BUY: hasLanes ? storeLaneCounts[i * 4] : 0,
+          CALL: hasLanes ? storeLaneCounts[i * 4 + 1] : 0,
+          PUT: hasLanes ? storeLaneCounts[i * 4 + 2] : 0,
+          SHORT: hasLanes ? storeLaneCounts[i * 4 + 3] : 0,
+        },
+      };
+    });
 
-    // Find max for normalization
-    let maxCount = 1;
+    // Group by sector
+    const sectorMap = new Map<string, TreemapStockNode[]>();
+    for (const node of stockNodes) {
+      const arr = sectorMap.get(node.sector) || [];
+      arr.push(node);
+      sectorMap.set(node.sector, arr);
+    }
+
+    // Build hierarchy data: root -> sectors -> stocks
+    const hierarchyData = {
+      name: 'root',
+      children: Array.from(sectorMap.entries()).map(([sector, children]) => ({
+        name: sector,
+        children: children.map((child) => ({
+          name: child.ticker,
+          value: Math.max(child.agentCount, 1), // minimum 1 so every stock gets a cell
+          data: child,
+        })),
+      })),
+    };
+
+    // Create treemap layout
+    const root = d3
+      .hierarchy(hierarchyData)
+      .sum((d: any) => d.value ?? 0)
+      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+
+    d3.treemap<any>()
+      .size([dimensions.width, dimensions.height])
+      .paddingOuter(3)
+      .paddingTop(16)
+      .paddingInner(1)
+      .round(true)(root);
+
+    return root;
+  }, [stocks, storeAgentCounts, storeDoorCounts, storeLaneCounts, dimensions]);
+
+  // Max agent count for normalization
+  const maxCount = useMemo(() => {
+    let max = 1;
     for (let i = 0; i < stocks.length; i++) {
       const total =
         (i < storeAgentCounts.length ? storeAgentCounts[i] : 0) +
         (i < storeDoorCounts.length ? storeDoorCounts[i] : 0);
-      if (total > maxCount) maxCount = total;
+      if (total > max) max = total;
     }
-
-    ctx.fillStyle = '#0a0a1e';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    stocks.forEach((stock, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const inside = i < storeAgentCounts.length ? storeAgentCounts[i] : 0;
-      const door = i < storeDoorCounts.length ? storeDoorCounts[i] : 0;
-      const count = inside + door;
-      const t = Math.min(count / maxCount, 1);
-
-      const sc = SECTORS.find((s) => s.name === stock.sector)?.color ?? '#444';
-      const r = parseInt(sc.slice(1, 3), 16) || 80;
-      const g = parseInt(sc.slice(3, 5), 16) || 80;
-      const b = parseInt(sc.slice(5, 7), 16) || 80;
-
-      const hr = Math.round(r + (255 - r) * t);
-      const hg = Math.round(g * (1 - t * 0.5) + 100 * t);
-      const hb = Math.round(b * (1 - t * 0.7));
-
-      ctx.fillStyle = `rgb(${hr},${hg},${hb})`;
-      ctx.fillRect(col * cellW + 0.5, row * cellH + 0.5, cellW - 1, cellH - 1);
-
-      if (cellW > 16 && cellH > 10) {
-        ctx.fillStyle = t > 0.5 ? '#000' : '#aaa';
-        ctx.font = `${Math.min(cellW * 0.35, 9)}px monospace`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(stock.ticker, col * cellW + cellW / 2, row * cellH + cellH / 2);
-      }
-    });
+    return max;
   }, [stocks, storeAgentCounts, storeDoorCounts]);
+
+  const handleMouseEnter = useCallback(
+    (node: any, e: React.MouseEvent) => {
+      const data = node.data?.data as TreemapStockNode | undefined;
+      if (!data) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setTooltip({
+        ticker: data.ticker,
+        sector: data.sector,
+        company: data.company,
+        total: data.agentCount,
+        inside: data.inside,
+        door: data.door,
+        lanes: data.lanes,
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    },
+    [],
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!tooltip) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setTooltip((prev) =>
+        prev ? { ...prev, x: e.clientX - rect.left, y: e.clientY - rect.top } : null,
+      );
+    },
+    [tooltip],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setTooltip(null);
+  }, []);
+
+  // Collect leaf nodes (stocks) and sector group nodes
+  const leaves = treemapNodes?.leaves() ?? [];
+  const sectorGroups = treemapNodes?.children ?? [];
+
+  const laneColors: Record<string, string> = {
+    BUY: '#00ff7f',
+    CALL: '#00bfff',
+    PUT: '#ff8c00',
+    SHORT: '#ff4444',
+  };
 
   return (
     <div
@@ -286,16 +421,215 @@ const AgentHeatmap: React.FC<{
           margin: '0 0 10px',
           letterSpacing: 1,
           textTransform: 'uppercase',
+          flexShrink: 0,
         }}
       >
         Agent Heatmap (Live)
       </h3>
-      <canvas
-        ref={canvasRef}
-        width={600}
-        height={400}
-        style={{ width: '100%', flex: 1, borderRadius: 4, imageRendering: 'pixelated' }}
-      />
+      <div
+        ref={containerRef}
+        style={{
+          flex: 1,
+          position: 'relative',
+          borderRadius: 4,
+          overflow: 'hidden',
+          background: '#0a0a1e',
+          minHeight: 0,
+        }}
+      >
+        {/* Sector group labels */}
+        {sectorGroups.map((sectorNode: any) => {
+          const sectorColor =
+            SECTORS.find((s) => s.name === sectorNode.data.name)?.color ?? '#666';
+          const w = sectorNode.x1 - sectorNode.x0;
+          const h = sectorNode.y1 - sectorNode.y0;
+          if (w < 2 || h < 2) return null;
+          return (
+            <div
+              key={`sector-${sectorNode.data.name}`}
+              style={{
+                position: 'absolute',
+                left: sectorNode.x0,
+                top: sectorNode.y0,
+                width: w,
+                height: Math.min(15, h),
+                fontSize: 9,
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                color: sectorColor,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+                padding: '1px 3px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                lineHeight: '14px',
+                pointerEvents: 'none',
+                zIndex: 2,
+              }}
+            >
+              {sectorNode.data.name}
+            </div>
+          );
+        })}
+
+        {/* Stock cells */}
+        {leaves.map((leaf: any) => {
+          const data = leaf.data?.data as TreemapStockNode | undefined;
+          if (!data) return null;
+          const w = leaf.x1 - leaf.x0;
+          const h = leaf.y1 - leaf.y0;
+          if (w < 1 || h < 1) return null;
+
+          const t = maxCount > 0 ? data.agentCount / maxCount : 0;
+          const bg = heatColor(t);
+          const showLabel = w > 28 && h > 14;
+          const showCount = w > 20 && h > 24;
+          // Text contrast: dark text on bright yellows, light text on blue/red extremes
+          const textColor = t > 0.25 && t < 0.75 ? '#000' : '#fff';
+
+          return (
+            <div
+              key={data.ticker}
+              onMouseEnter={(e) => handleMouseEnter(leaf, e)}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              style={{
+                position: 'absolute',
+                left: leaf.x0,
+                top: leaf.y0,
+                width: w,
+                height: h,
+                background: bg,
+                borderRadius: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                transition: 'opacity 0.1s',
+                zIndex: 1,
+              }}
+            >
+              {showLabel && (
+                <div
+                  style={{
+                    fontSize: Math.min(w * 0.3, 10),
+                    fontWeight: 700,
+                    fontFamily: 'monospace',
+                    color: textColor,
+                    lineHeight: 1,
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    maxWidth: w - 2,
+                    textAlign: 'center',
+                  }}
+                >
+                  {data.ticker}
+                </div>
+              )}
+              {showCount && (
+                <div
+                  style={{
+                    fontSize: Math.min(w * 0.22, 8),
+                    fontFamily: 'monospace',
+                    color: textColor,
+                    opacity: 0.8,
+                    lineHeight: 1,
+                    marginTop: 1,
+                  }}
+                >
+                  {data.agentCount}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Tooltip */}
+        {tooltip && (
+          <div
+            style={{
+              position: 'absolute',
+              left: Math.min(tooltip.x + 12, dimensions.width - 180),
+              top: Math.min(tooltip.y + 12, dimensions.height - 140),
+              background: 'rgba(10, 10, 30, 0.95)',
+              border: `1px solid ${ACCENT}66`,
+              borderRadius: 6,
+              padding: '8px 10px',
+              fontSize: 11,
+              fontFamily: 'monospace',
+              color: TEXT_COLOR,
+              pointerEvents: 'none',
+              zIndex: 10,
+              minWidth: 150,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+            }}
+          >
+            <div style={{ color: ACCENT, fontWeight: 700, fontSize: 12, marginBottom: 4 }}>
+              {tooltip.ticker}
+            </div>
+            <div style={{ color: '#888', fontSize: 10, marginBottom: 4 }}>
+              {tooltip.company}
+            </div>
+            <div style={{ color: '#aaa', fontSize: 9, marginBottom: 6 }}>
+              {tooltip.sector}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: 2,
+                color: TEXT_COLOR,
+              }}
+            >
+              <span>Total agents</span>
+              <span style={{ fontWeight: 700 }}>{tooltip.total}</span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                color: '#00FF7F',
+                fontSize: 10,
+              }}
+            >
+              <span>Inside</span>
+              <span>{tooltip.inside}</span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                color: '#FF69B4',
+                fontSize: 10,
+              }}
+            >
+              <span>Door fighting</span>
+              <span>{tooltip.door}</span>
+            </div>
+            <div
+              style={{ height: 1, background: BORDER_COLOR, margin: '4px 0' }}
+            />
+            {Object.entries(tooltip.lanes).map(([lane, count]) => (
+              <div
+                key={lane}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  color: laneColors[lane] || '#bbb',
+                  fontSize: 10,
+                }}
+              >
+                <span>{lane}</span>
+                <span>{count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -690,6 +1024,7 @@ export default function AgentReactionsPage() {
             stocks={stocks}
             storeAgentCounts={storeAgentCounts}
             storeDoorCounts={storeDoorCounts}
+            storeLaneCounts={storeLaneCounts}
           />
         </div>
 

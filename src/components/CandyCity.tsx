@@ -18,7 +18,7 @@ import { useStore } from '../store/useStore';
 // Skybox: large inverted sphere with a pink-to-purple gradient
 // ---------------------------------------------------------------------------
 function CandySkybox() {
-  const geometry = useMemo(() => new THREE.SphereGeometry(400, 32, 32), []);
+  const geometry = useMemo(() => new THREE.SphereGeometry(600, 32, 32), []);
 
   const colorAttr = useMemo(() => {
     const posAttr = geometry.getAttribute('position');
@@ -31,7 +31,7 @@ function CandySkybox() {
 
     for (let i = 0; i < count; i++) {
       const y = posAttr.getY(i);
-      const t = (y + 400) / 800;
+      const t = (y + 600) / 1200;
       temp.copy(pink).lerp(purple, t);
       colors[i * 3] = temp.r;
       colors[i * 3 + 1] = temp.g;
@@ -59,7 +59,7 @@ function CameraController({ enabled }: { enabled: boolean }) {
   const selectedStock = useStore((s) => s.selectedStock);
   const controlsRef = useRef<any>(null);
   const { camera } = useThree();
-  const targetPos = useRef(new THREE.Vector3(0, 150, 150));
+  const targetPos = useRef(new THREE.Vector3(0, 200, 200));
   const targetLookAt = useRef(new THREE.Vector3(0, 0, 0));
   const isAnimating = useRef(false);
 
@@ -75,7 +75,7 @@ function CameraController({ enabled }: { enabled: boolean }) {
       targetLookAt.current.set(x, h * 0.4, z);
       isAnimating.current = true;
     } else {
-      targetPos.current.set(0, 150, 150);
+      targetPos.current.set(0, 200, 200);
       targetLookAt.current.set(0, 0, 0);
       isAnimating.current = true;
     }
@@ -104,7 +104,7 @@ function CameraController({ enabled }: { enabled: boolean }) {
       ref={controlsRef}
       maxPolarAngle={Math.PI / 2.2}
       minDistance={5}
-      maxDistance={400}
+      maxDistance={600}
       enableDamping
       dampingFactor={0.08}
     />
@@ -120,13 +120,13 @@ export default function CandyCity() {
   return (
     <>
       <Canvas
-        camera={{ position: [0, 150, 150], fov: 60, near: 0.1, far: 1000 }}
+        camera={{ position: [0, 200, 200], fov: 60, near: 0.1, far: 1200 }}
         style={{ width: '100%', height: '100vh' }}
         gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping, powerPreference: 'high-performance' }}
         dpr={[1, 1.5]}
       >
         {/* Fog */}
-        <fog attach="fog" args={['#2a1a3a', 100, 500]} />
+        <fog attach="fog" args={['#2a1a3a', 150, 700]} />
 
         {/* Lighting */}
         <ambientLight intensity={0.6} color="#FFE4B5" />

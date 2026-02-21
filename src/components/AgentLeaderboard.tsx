@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
+import { GoldenStar } from './CandyIcons';
 import type { LeaderboardEntry } from '../types';
 
 function formatProfit(n: number): string {
@@ -118,7 +119,7 @@ export const AgentLeaderboard: React.FC = () => {
     <div style={containerStyle}>
       {/* Header / toggle */}
       <button style={headerBtnStyle} onClick={() => setCollapsed((c) => !c)}>
-        <span style={trophyStyle}>{'\u{1F3C6}'}</span>
+        <span style={trophyStyle}><GoldenStar size={14} /></span>
         <span style={titleTextStyle}>Top 5 Agents</span>
         <span style={chevronStyle}>{collapsed ? '\u25B2' : '\u25BC'}</span>
       </button>

@@ -204,7 +204,11 @@ Respond with ONLY valid JSON:
 // ── Full Cycle ──
 
 export async function runHierarchicalCycle(stocks: StockData[]): Promise<PortfolioAllocation[]> {
-  if (!API_KEY || isCycleRunning) return [];
+  if (!API_KEY) {
+    console.warn('[Wonka] No VITE_GEMINI_API_KEY set — running fallback mode. Get your key at https://aistudio.google.com/apikey');
+    return [];
+  }
+  if (isCycleRunning) return [];
 
   const now = Date.now();
   if (now - lastCycleTime < CYCLE_INTERVAL) return [];

@@ -24,17 +24,17 @@ function hashStr(str: string): number {
 
 // --- Sector Definitions ---
 export const SECTORS: SectorInfo[] = [
-  { name: 'Technology', icon: '\u{1F4BB}', district: 'Pixel Candy Arcade', color: '#00BFFF', position: [0, 0] },
-  { name: 'Healthcare', icon: '\u{1F48A}', district: 'Medicine Drop Lane', color: '#00FF7F', position: [1, 0] },
-  { name: 'Financials', icon: '\u{1F3E6}', district: 'Chocolate Coin Plaza', color: '#FFD700', position: [2, 0] },
-  { name: 'Consumer Discretionary', icon: '\u{1F6CD}', district: 'Candy Bar Boulevard', color: '#FF69B4', position: [0, 1] },
-  { name: 'Communication Services', icon: '\u{1F4E1}', district: 'Bubblegum Row', color: '#9370DB', position: [1, 1] },
-  { name: 'Industrials', icon: '\u{1F3ED}', district: 'Gumball Factory', color: '#808080', position: [2, 1] },
-  { name: 'Consumer Staples', icon: '\u{1F34E}', district: 'Sugar & Spice Market', color: '#FF6347', position: [0, 2] },
-  { name: 'Energy', icon: '\u{26A1}', district: 'Rock Candy Refinery', color: '#FF8C00', position: [1, 2] },
-  { name: 'Utilities', icon: '\u{1F50C}', district: 'Licorice Lane', color: '#8B0000', position: [2, 2] },
-  { name: 'Real Estate', icon: '\u{1F3E0}', district: 'Gingerbread Heights', color: '#DEB887', position: [0, 3] },
-  { name: 'Materials', icon: '\u{26CF}', district: 'Caramel Quarry', color: '#DAA520', position: [1, 3] },
+  { name: 'Technology', icon: '[TC]', district: 'Pixel Candy Arcade', color: '#00BFFF', position: [0, 0] },
+  { name: 'Healthcare', icon: '[HC]', district: 'Medicine Drop Lane', color: '#00FF7F', position: [1, 0] },
+  { name: 'Financials', icon: '[FN]', district: 'Chocolate Coin Plaza', color: '#FFD700', position: [2, 0] },
+  { name: 'Consumer Discretionary', icon: '[CD]', district: 'Candy Bar Boulevard', color: '#FF69B4', position: [0, 1] },
+  { name: 'Communication Services', icon: '[CS]', district: 'Bubblegum Row', color: '#9370DB', position: [1, 1] },
+  { name: 'Industrials', icon: '[IN]', district: 'Gumball Factory', color: '#808080', position: [2, 1] },
+  { name: 'Consumer Staples', icon: '[ST]', district: 'Sugar & Spice Market', color: '#FF6347', position: [0, 2] },
+  { name: 'Energy', icon: '[EN]', district: 'Rock Candy Refinery', color: '#FF8C00', position: [1, 2] },
+  { name: 'Utilities', icon: '[UT]', district: 'Licorice Lane', color: '#8B0000', position: [2, 2] },
+  { name: 'Real Estate', icon: '[RE]', district: 'Gingerbread Heights', color: '#DEB887', position: [0, 3] },
+  { name: 'Materials', icon: '[MT]', district: 'Caramel Quarry', color: '#DAA520', position: [1, 3] },
 ];
 
 export const SECTOR_CANDY_ICONS: Record<string, string[]> = {
@@ -406,7 +406,7 @@ export function generateStockData(): StockData[] {
   }
 
   // Generate random positions using Poisson disk sampling
-  const positions = poissonDiskSample(allCompanies.length, 300, 300, 4.5, rand);
+  const positions = poissonDiskSample(allCompanies.length, 500, 500, 8.0, rand);
 
   for (let globalRank = 0; globalRank < allCompanies.length; globalRank++) {
     const { ticker, company, brandColor, sector } = allCompanies[globalRank];
@@ -571,7 +571,7 @@ export async function loadPipelineData(): Promise<{
   const payload: PipelinePayload = await res.json();
 
   const rand = seededRandom(42);
-  const positions = poissonDiskSample(payload.stocks.length, 300, 300, 4.5, rand);
+  const positions = poissonDiskSample(payload.stocks.length, 500, 500, 8.0, rand);
 
   const stocks: StockData[] = payload.stocks.map((raw, i) => {
     const pos = positions[i] || { x: rand() * 200 - 100, z: rand() * 200 - 100 };

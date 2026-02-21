@@ -2,6 +2,7 @@ import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import { generateStockData, getCorrelationEdges, loadPipelineData, modulateStocksByTime } from './data/stockData';
+import { CandyCane, ChartLine, LightningBolt, WebNodes, Gumball, NoteBook, Lollipop, ChocolateBar } from './components/CandyIcons';
 import type { PageName } from './types';
 
 const GoldenCityPage = lazy(() => import('./pages/GoldenCityPage'));
@@ -11,13 +12,13 @@ const GraphPlaygroundPage = lazy(() => import('./pages/GraphPlaygroundPage'));
 const AgentNetworkPage = lazy(() => import('./pages/AgentNetworkPage'));
 const TradeJournalPage = lazy(() => import('./pages/TradeJournalPage'));
 
-const NAV_ITEMS: { path: string; label: string; icon: string; page: PageName }[] = [
-  { path: '/', label: 'City', icon: '\u{1F3D9}', page: 'city' },
-  { path: '/network', label: 'Stock Network', icon: '\u{1F4CA}', page: 'network' },
-  { path: '/agents', label: 'Agent Reactions', icon: '\u{1F916}', page: 'agents' },
-  { path: '/agent-network', label: 'Agent Network', icon: '\u{1F578}', page: 'agent-network' },
-  { path: '/playground', label: 'Playground', icon: '\u{1F3AE}', page: 'playground' },
-  { path: '/journal', label: 'Trade Journal', icon: '\u{1F4D3}', page: 'journal' },
+const NAV_ITEMS: { path: string; label: string; icon: React.ReactNode; page: PageName }[] = [
+  { path: '/', label: 'City', icon: <CandyCane size={16} />, page: 'city' },
+  { path: '/network', label: 'Stock Network', icon: <ChartLine size={16} />, page: 'network' },
+  { path: '/agents', label: 'Agent Reactions', icon: <LightningBolt size={16} />, page: 'agents' },
+  { path: '/agent-network', label: 'Agent Network', icon: <WebNodes size={16} />, page: 'agent-network' },
+  { path: '/playground', label: 'Playground', icon: <Gumball size={16} />, page: 'playground' },
+  { path: '/journal', label: 'Trade Journal', icon: <NoteBook size={16} />, page: 'journal' },
 ];
 
 function LoadingScreen() {
@@ -29,7 +30,7 @@ function LoadingScreen() {
       fontSize: 24, fontFamily: 'system-ui',
     }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>{'\u{1F36C}'}</div>
+        <div style={{ marginBottom: 16 }}><Lollipop size={48} /></div>
         <div>Loading Golden City...</div>
       </div>
     </div>
@@ -53,7 +54,7 @@ function NavBar() {
         fontWeight: 700, fontSize: 16, color: '#FFD700',
         marginRight: 24, letterSpacing: '0.5px',
       }}>
-        {'\u{1F36B}'} Wolf of Wall Sweet
+        <ChocolateBar size={18} /> Wolf of Wall Sweet
       </div>
       {NAV_ITEMS.map((item) => (
         <NavLink

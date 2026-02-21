@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getWhales, type WhaleFund } from '../services/whaleArena';
 import { getLatestChain, type ReasoningChain } from '../services/geminiService';
+import { HamburgerMenu, TopHat, WHALE_ICONS } from './CandyIcons';
 
 export function WhaleLeaderboard() {
   const [whales, setWhales] = useState<WhaleFund[]>(getWhales());
@@ -82,7 +83,7 @@ export function WhaleLeaderboard() {
           userSelect: 'none',
         }}
       >
-        {'\u2630'} {'\u{1F3A9}'} WHALE ARENA LEADERBOARD
+        <HamburgerMenu size={12} /> <TopHat size={14} /> WHALE ARENA LEADERBOARD
       </div>
 
       {/* Whale Rankings */}
@@ -111,7 +112,7 @@ export function WhaleLeaderboard() {
               fontSize: 11, fontWeight: 600, color: whale.color,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
-              {whale.icon} {whale.name}
+              {WHALE_ICONS[whale.id] || whale.icon} {whale.name}
             </div>
             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>
               {whale.strategy}
@@ -141,7 +142,7 @@ export function WhaleLeaderboard() {
           border: '1px solid rgba(255, 215, 0, 0.1)',
         }}>
           <div style={{ fontSize: 9, color: '#FFD700', fontWeight: 600, marginBottom: 2 }}>
-            {'\u{1F3A9}'} WONKA AI
+            <TopHat size={10} /> WONKA AI
           </div>
           <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', lineHeight: 1.3 }}>
             {whales[0].reasoning}

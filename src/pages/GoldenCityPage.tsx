@@ -56,6 +56,7 @@ export default function GoldenCityPage() {
             transform: 'translateX(-50%)',
             zIndex: 10,
             pointerEvents: 'auto',
+            overflow: 'visible',
           }}
         >
           <TimeSlider />
@@ -82,7 +83,7 @@ export default function GoldenCityPage() {
         <div
           style={{
             position: 'absolute',
-            bottom: 72,
+            bottom: 80,
             left: 16,
             zIndex: 10,
             pointerEvents: 'auto',
@@ -97,7 +98,7 @@ export default function GoldenCityPage() {
         <div
           style={{
             position: 'absolute',
-            bottom: 260,
+            bottom: 268,
             left: 16,
             zIndex: 10,
             pointerEvents: 'auto',

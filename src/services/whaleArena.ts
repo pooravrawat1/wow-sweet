@@ -42,28 +42,28 @@ const WHALES: WhaleFund[] = [
   {
     id: 0, name: 'Wonka Fund', strategy: 'Gemini AI (Hierarchical)',
     color: FACTION_COLORS.wonka.hex, colorRGB: FACTION_COLORS.wonka.rgb,
-    icon: '\u{1F3A9}',
+    icon: 'W',
     allocations: [], totalProfit: 0, tradeCount: 0, lastUpdated: 0,
     reasoning: 'Initializing 11 Sector Analysts + Portfolio Manager + Risk Desk...',
   },
   {
     id: 1, name: 'Slugworth Fund', strategy: 'Momentum',
     color: FACTION_COLORS.slugworth.hex, colorRGB: FACTION_COLORS.slugworth.rgb,
-    icon: '\u{1F525}',
+    icon: 'S',
     allocations: [], totalProfit: 0, tradeCount: 0, lastUpdated: 0,
     reasoning: 'Scanning for momentum runners...',
   },
   {
     id: 2, name: 'Oompa Fund', strategy: 'Value/Dip',
     color: FACTION_COLORS.oompa.hex, colorRGB: FACTION_COLORS.oompa.rgb,
-    icon: '\u{1F4B0}',
+    icon: 'O',
     allocations: [], totalProfit: 0, tradeCount: 0, lastUpdated: 0,
     reasoning: 'Hunting for deep value...',
   },
   {
     id: 3, name: 'Gobstopper Fund', strategy: 'Contrarian',
     color: FACTION_COLORS.gobstopper.hex, colorRGB: FACTION_COLORS.gobstopper.rgb,
-    icon: '\u{1F52E}',
+    icon: 'G',
     allocations: [], totalProfit: 0, tradeCount: 0, lastUpdated: 0,
     reasoning: 'Fading the consensus...',
   },
@@ -204,6 +204,28 @@ export async function updateWhaleAllocations(
       const sectors = chain.sectorReports.length;
       const risk = chain.riskReview?.overallRisk || 'unknown';
       WHALES[0].reasoning = `${sectors} analysts -> PM -> Risk(${risk}): ${chain.finalAllocations.length} positions in ${chain.cycleMs}ms`;
+    }
+  } else if (WHALES[0].allocations.length === 0) {
+    // SMART FALLBACK: No Gemini API key or cycle returned empty.
+    // Pick top 8 stocks by golden_score so Wonka agents always have targets.
+    const goldenStocks = stocks
+      .filter((s) => s.golden_score >= 2)
+      .sort((a, b) => b.golden_score - a.golden_score)
+      .slice(0, 8);
+
+    if (goldenStocks.length > 0) {
+      const weight = 1.0 / goldenStocks.length;
+      WHALES[0].allocations = goldenStocks.map((s) => ({
+        ticker: s.ticker,
+        weight,
+        action: s.golden_score >= 4
+          ? 'BUY' as const
+          : s.golden_score >= 3
+            ? 'CALL' as const
+            : 'BUY' as const,
+      }));
+      WHALES[0].lastUpdated = now;
+      WHALES[0].reasoning = `Fallback mode (no API key): ${goldenStocks.length} golden ticket stocks (score >= 2), sorted by golden_score. Add VITE_GEMINI_API_KEY for full AI analysis.`;
     }
   }
 
