@@ -79,6 +79,10 @@ interface AppStore {
   databricksConnected: boolean;
   setDatabricksConnected: (connected: boolean) => void;
 
+  // --- Snapshot date (from Databricks advance pipeline) ---
+  snapshotDate: string;
+  setSnapshotDate: (date: string) => void;
+
   // --- Per-store crowd data (from simulation) ---
   storeAgentCounts: Int16Array;
   storeDoorCounts: Int16Array;
@@ -176,6 +180,10 @@ export const useStore = create<AppStore>((set) => ({
   setBackendConnected: (connected) => set({ backendConnected: connected }),
   databricksConnected: false,
   setDatabricksConnected: (connected) => set({ databricksConnected: connected }),
+
+  // Snapshot date
+  snapshotDate: '',
+  setSnapshotDate: (date) => set({ snapshotDate: date }),
 
   // Per-store crowd data
   storeAgentCounts: new Int16Array(0),

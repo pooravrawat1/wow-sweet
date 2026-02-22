@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { useStore } from './store/useStore';
-import { loadStockData, modulateStocksByTime } from './data/stockData';
+import { loadStockData, modulateStocksByTime, parsePipelinePayload, getCorrelationEdges } from './data/stockData';
 import { apiClient } from './services/apiClient';
 import { initTrackedAgents, processDay, getLeaderboard } from './services/tradeTracker';
 import { updateWhaleAllocations } from './services/whaleArena';
@@ -255,6 +255,67 @@ export default function App() {
     const interval = setInterval(runUpdate, 15000);
     return () => clearInterval(interval);
   }, [stocks, timeSlider.mode, geminiEnabled]);
+
+  // ── Continuous Databricks advance loop (every 10s) ──
+  // Fires /api/advance to push the pipeline to the next trading day,
+  // then fetches /api/stocks to pick up new data. Purely background —
+  // no visual changes, just keeps the data flowing.
+  const snapshotDateRef = useRef<string>('');
+  const advancingRef = useRef(false);
+  const setSnapshotDate = useStore((s) => s.setSnapshotDate);
+
+  useEffect(() => {
+    if (baseStocks.length === 0) return;
+
+    const tick = setInterval(async () => {
+      // Fire advance (non-blocking, don't wait)
+      if (!advancingRef.current) {
+        advancingRef.current = true;
+        apiClient.triggerAdvance()
+          .then((r) => {
+            if (r?.action === 'advanced') {
+              console.log(`[SweetReturns] ${r.message}`);
+            }
+          })
+          .catch(() => {})
+          .finally(() => { advancingRef.current = false; });
+      }
+
+      // Fetch latest stocks snapshot
+      try {
+        const result = await apiClient.fetchStocksWithDate();
+        if (!result || result.stocks.length === 0) return;
+
+        // Only update if the snapshot date changed
+        if (result.snapshot_date && result.snapshot_date !== snapshotDateRef.current) {
+          snapshotDateRef.current = result.snapshot_date;
+          setSnapshotDate(result.snapshot_date);
+
+          const parsed = parsePipelinePayload({
+            stocks: result.stocks,
+            correlation_edges: result.correlation_edges,
+          });
+          const edges = parsed.edges.length === 0
+            ? getCorrelationEdges(parsed.stocks)
+            : parsed.edges;
+
+          setStocks(parsed.stocks);
+          setBaseStocks(parsed.stocks);
+          setCorrelationEdges(edges);
+
+          // Process the new day for agent leaderboard
+          processDay(result.snapshot_date, parsed.stocks);
+          setAgentLeaderboard(getLeaderboard());
+
+          console.log(`[SweetReturns] New snapshot: ${result.snapshot_date} (${parsed.stocks.length} stocks)`);
+        }
+      } catch {
+        // Silently continue on fetch failure
+      }
+    }, 10_000);
+
+    return () => clearInterval(tick);
+  }, [baseStocks.length, setStocks, setBaseStocks, setCorrelationEdges, setAgentLeaderboard, setSnapshotDate]);
 
   const [minLoadDone, setMinLoadDone] = useState(false);
 

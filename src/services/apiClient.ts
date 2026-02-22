@@ -128,6 +128,33 @@ class ApiClient {
     return null;
   }
 
+  async triggerAdvance(): Promise<any | null> {
+    try {
+      const res = await fetch('/api/advance', { signal: AbortSignal.timeout(60000) });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async fetchStocksWithDate(): Promise<{ stocks: any[]; correlation_edges: any[]; source: string; snapshot_date: string } | null> {
+    try {
+      const res = await fetch('/api/stocks', { signal: AbortSignal.timeout(45000) });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data.stocks || data.stocks.length === 0) return null;
+      return {
+        stocks: data.stocks,
+        correlation_edges: data.correlation_edges || [],
+        source: data.source || 'backend',
+        snapshot_date: data.snapshot_date || '',
+      };
+    } catch {
+      return null;
+    }
+  }
+
   async fetchRegime(): Promise<any | null> {
     const base = this._resolvedBase || this._externalUrl;
     try {
