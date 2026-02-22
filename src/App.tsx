@@ -245,7 +245,10 @@ export default function App() {
   }, [setStocks, setBaseStocks, setCorrelationEdges, setAgentLeaderboard, setDataSource, setBackendConnected, setDatabricksConnected]);
 
   // Auto-refresh: poll for new data every 60 seconds
+  // Auto-trigger advance when data goes stale (same date for 3+ polls)
   const snapshotDateRef = useRef<string>('');
+  const stalePollCountRef = useRef(0);
+  const advanceTriggeredRef = useRef(false);
   useEffect(() => {
     if (baseStocks.length === 0) return;
 
@@ -258,6 +261,8 @@ export default function App() {
         if (result.snapshot_date && result.snapshot_date !== snapshotDateRef.current) {
           console.log(`[SweetReturns] New snapshot detected: ${snapshotDateRef.current} → ${result.snapshot_date}`);
           snapshotDateRef.current = result.snapshot_date;
+          stalePollCountRef.current = 0;
+          advanceTriggeredRef.current = false;
 
           const parsed = result.stocks.map((s: any) => ({
             ...s,
@@ -277,6 +282,24 @@ export default function App() {
 
           // Refresh simulation history so agents learn from past cycles
           loadSimulationHistory();
+        } else {
+          // Same date — track staleness
+          stalePollCountRef.current++;
+
+          // After 3 consecutive stale polls (3 min), trigger advance
+          if (stalePollCountRef.current >= 3 && !advanceTriggeredRef.current) {
+            advanceTriggeredRef.current = true;
+            console.log(`[SweetReturns] Data stale for ${stalePollCountRef.current} polls — triggering advance`);
+            const advResult = await apiClient.triggerAdvance();
+            if (advResult) {
+              console.log(`[SweetReturns] Advance trigger: ${advResult.action} — ${advResult.message || ''}`);
+            }
+          }
+
+          // Re-trigger every 10 polls (10 min) if still stale
+          if (stalePollCountRef.current > 0 && stalePollCountRef.current % 10 === 0) {
+            advanceTriggeredRef.current = false;
+          }
         }
       } catch {
         // Silently ignore polling errors
@@ -293,7 +316,7 @@ export default function App() {
     setModulatedBiases(modulated.map((s) => s.direction_bias));
   }, [baseStocks, timeSlider.currentDate, timeSlider.mode, setModulatedBiases]);
 
-  // Process trades when date changes — drives leaderboard
+  // Process trades + update whale arena when date changes
   const stocks = useStore((s) => s.stocks);
   const geminiEnabled = useStore((s) => s.geminiEnabled);
   const lastProcessedDate = useRef<string>('');
@@ -302,16 +325,9 @@ export default function App() {
     lastProcessedDate.current = timeSlider.currentDate;
     processDay(timeSlider.currentDate, stocks);
     setAgentLeaderboard(getLeaderboard());
-  }, [stocks, timeSlider.currentDate, setAgentLeaderboard]);
-
-  // Whale arena: update allocations on init and every 15s (independent of city page)
-  useEffect(() => {
-    if (stocks.length === 0) return;
-    const runUpdate = () => updateWhaleAllocations(stocks, timeSlider.mode, geminiEnabled);
-    runUpdate(); // immediate first run
-    const interval = setInterval(runUpdate, 15000);
-    return () => clearInterval(interval);
-  }, [stocks, timeSlider.mode, geminiEnabled]);
+    // Update whale allocations + profits on every date change (drives Whale Arena during playback)
+    updateWhaleAllocations(stocks, timeSlider.mode, geminiEnabled);
+  }, [stocks, timeSlider.currentDate, timeSlider.mode, geminiEnabled, setAgentLeaderboard]);
 
   const [minLoadDone, setMinLoadDone] = useState(false);
 

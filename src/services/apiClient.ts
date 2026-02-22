@@ -209,6 +209,39 @@ class ApiClient {
     }
   }
 
+  /** Trigger the advance_snapshot pipeline on Databricks to process the next trading day */
+  async triggerAdvance(): Promise<{
+    action: string;
+    message?: string;
+    run_id?: number;
+    error?: string;
+  } | null> {
+    const base = this._resolvedBase || '/api';
+    try {
+      const res = await fetch(`${base}/advance`, {
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /** Get pipeline advance status — recent runs, current date, cluster info */
+  async fetchAdvanceStatus(): Promise<any | null> {
+    const base = this._resolvedBase || '/api';
+    try {
+      const res = await fetch(`${base}/advance_status`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
   async fetchRegime(): Promise<any | null> {
     const base = this._resolvedBase || this._externalUrl;
     try {

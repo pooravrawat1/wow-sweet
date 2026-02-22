@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "docs": "cd docs && sphinx-build -b html . _build/html && rm -rf ../public/docs && cp -r _build/html ../public/docs",
+    "build:full": "npm run docs && npm run build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

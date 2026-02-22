@@ -1,0 +1,226 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Databricks Pipeline &mdash; Wolf of Wall Sweet 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Endpoints" href="api_endpoints.html" />
+    <link rel="prev" title="Architecture Overview" href="architecture.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Wolf of Wall Sweet
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#system-components">System Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#data-flow">Data Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#golden-ticket-system">Golden Ticket System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#frontend-data-fallback">Frontend Data Fallback</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Databricks Pipeline</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#cli-runner">CLI Runner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bronze-layer">Bronze Layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#silver-layer">Silver Layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gold-layer">Gold Layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#incremental-processing">Incremental Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api_endpoints.html">API Endpoints</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#get-api-health">GET /api/health</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#get-api-stocks">GET /api/stocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#post-api-simulation">POST /api/simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#get-api-simulation-history">GET /api/simulation_history</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#get-api-advance">GET /api/advance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#get-api-advance-status">GET /api/advance_status</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="continuous_loop.html">Continuous Pipeline Loop</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="continuous_loop.html#loop-architecture">Loop Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="continuous_loop.html#trigger-mechanisms">Trigger Mechanisms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="continuous_loop.html#simulation-feedback">Simulation Feedback</a></li>
+<li class="toctree-l2"><a class="reference internal" href="continuous_loop.html#tables">Tables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="continuous_loop.html#dataset-wrapping">Dataset Wrapping</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#vercel-setup">Vercel Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#databricks-setup">Databricks Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#building-documentation">Building Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#frontend-build">Frontend Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#testing-endpoints">Testing Endpoints</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Wolf of Wall Sweet</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Databricks Pipeline</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pipeline.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="databricks-pipeline">
+<h1>Databricks Pipeline<a class="headerlink" href="#databricks-pipeline" title="Link to this heading"></a></h1>
+<p>The data pipeline follows the medallion architecture (bronze → silver → gold)
+running on Databricks with PySpark and Delta Lake.</p>
+<section id="cli-runner">
+<h2>CLI Runner<a class="headerlink" href="#cli-runner" title="Link to this heading"></a></h2>
+<p>All pipeline steps are managed by <code class="docutils literal notranslate"><span class="pre">databricks/cli_pipeline.py</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run full pipeline</span>
+python<span class="w"> </span>databricks/cli_pipeline.py<span class="w"> </span>--step<span class="w"> </span>all
+
+<span class="c1"># Run individual steps</span>
+python<span class="w"> </span>databricks/cli_pipeline.py<span class="w"> </span>--step<span class="w"> </span>bronze
+python<span class="w"> </span>databricks/cli_pipeline.py<span class="w"> </span>--step<span class="w"> </span>silver
+python<span class="w"> </span>databricks/cli_pipeline.py<span class="w"> </span>--step<span class="w"> </span>gold
+
+<span class="c1"># Check connectivity</span>
+python<span class="w"> </span>databricks/cli_pipeline.py<span class="w"> </span>--check-only
+</pre></div>
+</div>
+</section>
+<section id="bronze-layer">
+<h2>Bronze Layer<a class="headerlink" href="#bronze-layer" title="Link to this heading"></a></h2>
+<p><strong>Script:</strong> <code class="docutils literal notranslate"><span class="pre">databricks/bronze_ingestion.py</span></code></p>
+<p>Ingests raw stock data from Kaggle CSV into Delta Lake:</p>
+<ul class="simple">
+<li><p>602,000 rows covering 491 tickers over 5 years</p></li>
+<li><p>Columns: Date, Open, High, Low, Close, Adj Close, Volume, Company</p></li>
+<li><p>Adds sector mapping via predefined ticker-to-sector lookup</p></li>
+<li><p>Output: <code class="docutils literal notranslate"><span class="pre">sweetreturns.bronze.raw_stock_data</span></code></p></li>
+</ul>
+</section>
+<section id="silver-layer">
+<h2>Silver Layer<a class="headerlink" href="#silver-layer" title="Link to this heading"></a></h2>
+<p><strong>Script:</strong> <code class="docutils literal notranslate"><span class="pre">databricks/silver_features.py</span></code></p>
+<p>Computes 50+ technical indicators per ticker per date:</p>
+<ul class="simple">
+<li><p><strong>Returns:</strong> daily_return, log_return, rolling returns (5d, 20d, 60d)</p></li>
+<li><p><strong>Drawdown:</strong> drawdown_pct, drawdown_percentile, expanding_max_close</p></li>
+<li><p><strong>Volatility:</strong> realized_vol_20d, realized_vol_60d, vol_percentile</p></li>
+<li><p><strong>RSI:</strong> 14-period Relative Strength Index</p></li>
+<li><p><strong>MACD:</strong> macd_line, macd_signal, macd_histogram</p></li>
+<li><p><strong>Bollinger Bands:</strong> bb_upper, bb_lower, bb_pct_b</p></li>
+<li><p><strong>Z-scores:</strong> zscore_20d</p></li>
+<li><p><strong>Forward returns:</strong> 5d, 20d, 60d with skew and percentile distribution</p></li>
+<li><p><strong>Mean reversion:</strong> rolling return autocorrelation over 60d window</p></li>
+<li><p><strong>SPY relative:</strong> relative_return_vs_spy, relative_return_percentile</p></li>
+<li><p><strong>Vol regime:</strong> favorable vs elevated based on SPY vol 80th percentile</p></li>
+</ul>
+<p>Output: <code class="docutils literal notranslate"><span class="pre">sweetreturns.silver.stock_features</span></code></p>
+</section>
+<section id="gold-layer">
+<h2>Gold Layer<a class="headerlink" href="#gold-layer" title="Link to this heading"></a></h2>
+<p><strong>Script:</strong> <code class="docutils literal notranslate"><span class="pre">databricks/gold_tickets.py</span></code></p>
+<p>Evaluates golden ticket criteria and computes store parameters:</p>
+<ul class="simple">
+<li><p>5 ticket types (see Architecture Overview)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">golden_score</span></code>: sum of active tickets (0-5)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rarity_percentile</span></code>: cross-sectional rank within each date</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">is_platinum</span></code>: extreme rarity detection</p></li>
+<li><p>Direction bias: buy_pct, call_pct, put_pct, short_pct</p></li>
+<li><p>Store dimensions: width, height, depth, glow (based on market cap)</p></li>
+<li><p>Agent density and speed multiplier (based on golden score)</p></li>
+</ul>
+<p>Output: <code class="docutils literal notranslate"><span class="pre">sweetreturns.gold.golden_tickets</span></code></p>
+</section>
+<section id="incremental-processing">
+<h2>Incremental Processing<a class="headerlink" href="#incremental-processing" title="Link to this heading"></a></h2>
+<p><strong>Script:</strong> <code class="docutils literal notranslate"><span class="pre">databricks/advance_snapshot.py</span></code></p>
+<p>Processes one trading day at a time (used by the continuous loop):</p>
+<ol class="arabic simple">
+<li><p>Reads <code class="docutils literal notranslate"><span class="pre">MAX(Date)</span></code> from <code class="docutils literal notranslate"><span class="pre">golden_tickets</span></code></p></li>
+<li><p>Finds the next available date in <code class="docutils literal notranslate"><span class="pre">bronze.raw_stock_data</span></code></p></li>
+<li><p>Computes all silver features using lookback window</p></li>
+<li><p>Evaluates gold ticket criteria</p></li>
+<li><p>Reads simulation feedback from <code class="docutils literal notranslate"><span class="pre">simulation_results</span></code> table</p></li>
+<li><p>Blends crowd sentiment into direction biases (80% base + 20% crowd)</p></li>
+<li><p>Appends to <code class="docutils literal notranslate"><span class="pre">golden_tickets</span></code> with <code class="docutils literal notranslate"><span class="pre">mergeSchema=true</span></code></p></li>
+<li><p>Wraps around to start when dataset is fully consumed</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="architecture.html" class="btn btn-neutral float-left" title="Architecture Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api_endpoints.html" class="btn btn-neutral float-right" title="API Endpoints" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, SweetReturns Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
