@@ -177,8 +177,8 @@ const FallbackCanvasGraph: React.FC<{
           const tp2 = positions.get(link.target);
           if (!sp2 || !tp2) return;
           let maxT = 0;
-          if (srcShock) { const el = now - srcShock.timestamp; if (el >= 0 && el < 2000) maxT = Math.max(maxT, srcShock.intensity * (1 - el / 2000)); }
-          if (tgtShock) { const el = now - tgtShock.timestamp; if (el >= 0 && el < 2000) maxT = Math.max(maxT, tgtShock.intensity * (1 - el / 2000)); }
+          if (srcShock) { const el = now - srcShock.timestamp; if (el >= 0 && el < 5000) maxT = Math.max(maxT, srcShock.intensity * (1 - el / 5000)); }
+          if (tgtShock) { const el = now - tgtShock.timestamp; if (el >= 0 && el < 5000) maxT = Math.max(maxT, tgtShock.intensity * (1 - el / 5000)); }
           if (maxT <= 0) return;
           ctx.beginPath();
           ctx.moveTo(sp2.x, sp2.y);
@@ -204,14 +204,14 @@ const FallbackCanvasGraph: React.FC<{
         if (shock.active && shock.affectedNodes.has(node.id)) {
           const { intensity, timestamp } = shock.affectedNodes.get(node.id)!;
           const elapsed = now - timestamp;
-          if (elapsed >= 0 && elapsed < 2000) {
-            const fade = Math.max(0, 1 - elapsed / 2000);
+          if (elapsed >= 0 && elapsed < 5000) {
+            const fade = Math.max(0, 1 - elapsed / 5000);
             shockT = intensity * fade;
             fillColor = `rgb(${Math.round(255 * shockT + 136 * (1 - shockT))},${Math.round(215 * shockT + 136 * (1 - shockT))},${Math.round(0 * shockT + 136 * (1 - shockT))})`;
-            const shake = shockT * 10;
+            const shake = shockT * 6;
             drawX += (Math.random() - 0.5) * shake * 2;
             drawY += (Math.random() - 0.5) * shake * 2;
-            radius *= 1 + shockT * 2 * (0.5 + 0.5 * Math.sin(now * 0.012));
+            radius *= 1 + shockT * 2 * (0.5 + 0.5 * Math.sin(now * 0.004));
           }
         }
 
@@ -268,12 +268,12 @@ const FallbackCanvasGraph: React.FC<{
         const sourceInfo = shock.affectedNodes.get(shock.sourceNode);
         if (sourcePos && sourceInfo) {
           const elapsed = now - sourceInfo.timestamp;
-          for (let ring = 0; ring < 3; ring++) {
-            const ringElapsed = elapsed - ring * 500;
-            if (ringElapsed < 0 || ringElapsed > 2500) continue;
-            const progress = ringElapsed / 2500;
-            const ringRadius = progress * Math.min(w, h) * 0.45;
-            const ringAlpha = (1 - progress) * 0.35;
+          for (let ring = 0; ring < 4; ring++) {
+            const ringElapsed = elapsed - ring * 1200;
+            if (ringElapsed < 0 || ringElapsed > 6000) continue;
+            const progress = ringElapsed / 6000;
+            const ringRadius = progress * Math.min(w, h) * 0.5;
+            const ringAlpha = (1 - progress) * 0.4;
             ctx.beginPath();
             ctx.arc(sourcePos.x, sourcePos.y, ringRadius, 0, Math.PI * 2);
             ctx.strokeStyle = `rgba(255, 215, 0, ${ringAlpha})`;
@@ -603,7 +603,7 @@ export default function GraphPlaygroundPage() {
 
     while (queue.length > 0) {
       const current = queue.shift()!;
-      affected.set(current.id, { intensity: current.intensity, timestamp: now + current.depth * 300 });
+      affected.set(current.id, { intensity: current.intensity, timestamp: now + current.depth * 1000 });
       maxDepth = Math.max(maxDepth, current.depth);
       if (current.intensity < 0.05 || current.depth > 8) continue;
       const neighbors = adjacency.get(current.id) ?? [];
@@ -683,7 +683,7 @@ export default function GraphPlaygroundPage() {
     const maxDelay = Math.max(0, ...Array.from(affected.values()).map((v) => v.timestamp - now));
     setTimeout(() => {
       setShock({ active: false, sourceNode: null, affectedNodes: new Map() });
-    }, maxDelay + 3000);
+    }, maxDelay + 6000);
   }, [adjacency, stocks, shockType, setStocks]);
 
   // Handle node click
@@ -781,8 +781,8 @@ export default function GraphPlaygroundPage() {
     if (shock.active && shock.affectedNodes.has(id)) {
       const { intensity, timestamp } = shock.affectedNodes.get(id)!;
       const elapsed = Date.now() - timestamp;
-      if (elapsed >= 0 && elapsed < 2000) {
-        const fade = Math.max(0, 1 - elapsed / 2000);
+      if (elapsed >= 0 && elapsed < 5000) {
+        const fade = Math.max(0, 1 - elapsed / 5000);
         const t = intensity * fade;
         const br = parseInt((node.color || '#888888').slice(1, 3), 16) || 136;
         const bg = parseInt((node.color || '#888888').slice(3, 5), 16) || 136;
