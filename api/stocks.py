@@ -7,9 +7,9 @@ from urllib.request import Request, urlopen
 
 def _query_databricks(sql: str, params=None) -> list:
     """Execute SQL via Databricks SQL Statement REST API."""
-    host = os.environ.get("DATABRICKS_HOST", "").rstrip("/")
-    token = os.environ.get("DATABRICKS_TOKEN", "")
-    http_path = os.environ.get("DATABRICKS_SQL_WAREHOUSE_PATH", "")
+    host = os.environ.get("DATABRICKS_HOST", "").strip().rstrip("/")
+    token = os.environ.get("DATABRICKS_TOKEN", "").strip()
+    http_path = os.environ.get("DATABRICKS_SQL_WAREHOUSE_PATH", "").strip()
     warehouse_id = http_path.rstrip("/").split("/")[-1] if http_path else ""
 
     if not (host and token and warehouse_id):
