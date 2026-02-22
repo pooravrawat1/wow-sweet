@@ -10,14 +10,17 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from .databricks_client import DatabricksClient
 
-# Load .env from project root (parent of backend/)
-_env_path = Path(__file__).resolve().parents[2] / ".env"
-if _env_path.exists():
-    for line in _env_path.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            key, _, val = line.partition("=")
-            os.environ.setdefault(key.strip(), val.strip())
+# Load .env files — project root AND databricks/.env
+for env_path in [
+    Path(__file__).resolve().parents[2] / ".env",
+    Path(__file__).resolve().parents[2] / "databricks" / ".env",
+]:
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, val = line.partition("=")
+                os.environ.setdefault(key.strip(), val.strip())
 
 app = FastAPI(title="SweetReturns Agent Decision API")
 
@@ -122,50 +125,105 @@ Article{' from ' + source_url if source_url else ''}:
         return {"error": str(e)}
 
 
+# ── Health ────────────────────────────────────────────────────────────────
+
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "sweetreturns-api", "gemini": bool(GEMINI_API_KEY)}
+    return {
+        "status": "healthy",
+        "service": "sweetreturns-api",
+        "gemini": bool(GEMINI_API_KEY),
+        "databricks": db_client.is_connected,
+        "databricks_host": db_client.host[:30] + "..." if db_client.host else "not configured",
+    }
 
+
+# ── Market Regime (from HMM model on Databricks) ─────────────────────────
+
+@app.get("/regime")
+async def get_regime():
+    """Get current market regime from HMM model on Databricks."""
+    regime = await db_client.get_current_regime()
+    return regime
+
+
+# ── Ticker Sentiment (from FinBERT on Databricks) ────────────────────────
+
+@app.get("/sentiment/{ticker}")
+async def get_sentiment(ticker: str):
+    """Get FinBERT sentiment for a specific ticker from Databricks."""
+    sentiment = await db_client.get_ticker_sentiment(ticker.upper())
+    if sentiment:
+        return sentiment
+    return {"score": 0.0, "label": "neutral", "source": "no_data"}
+
+
+# ── Network Features (from correlation graph on Databricks) ──────────────
+
+@app.get("/network/{ticker}")
+async def get_network(ticker: str):
+    """Get correlation network features for a ticker from Databricks."""
+    features = await db_client.get_network_features(ticker.upper())
+    if features:
+        return features
+    return {"message": f"No network features found for {ticker.upper()}"}
+
+
+# ── Agent Archetypes (from Databricks) ───────────────────────────────────
+
+@app.get("/archetypes")
+async def get_archetypes():
+    """Get all 100 agent archetypes from Databricks."""
+    archetypes = await db_client.get_agent_archetypes()
+    return {"count": len(archetypes), "archetypes": archetypes}
+
+
+# ── Data Quality (from Databricks Delta tables + local payload) ──────────
 
 @app.get("/data-quality")
 async def data_quality():
-    """Monitor data quality of the frontend payload."""
+    """Monitor data quality — queries Databricks tables directly, falls back to local JSON."""
+    result = {}
+
+    # Try Databricks first
+    if db_client.is_connected:
+        db_quality = await db_client.get_data_quality()
+        result["databricks"] = db_quality
+
+    # Also check local payload
     payload_path = Path(__file__).resolve().parents[2] / "public" / "frontend_payload.json"
-    if not payload_path.exists():
-        return {"status": "missing", "message": "frontend_payload.json not found. Run scripts/build_payload.py"}
+    if payload_path.exists():
+        import json as _json
+        with open(payload_path) as f:
+            data = _json.load(f)
 
-    import json as _json
-    with open(payload_path) as f:
-        data = _json.load(f)
+        stocks = data.get("stocks", [])
+        edges = data.get("edges", [])
+        quality = data.get("data_quality", {})
 
-    stocks = data.get("stocks", [])
-    edges = data.get("edges", [])
-    quality = data.get("data_quality", {})
+        sectors = {}
+        for s in stocks:
+            sec = s.get("sector", "Unknown")
+            sectors[sec] = sectors.get(sec, 0) + 1
 
-    # Live checks
-    null_tickers = sum(1 for s in stocks if not s.get("ticker"))
-    null_sectors = sum(1 for s in stocks if not s.get("sector"))
-    zero_scores = sum(1 for s in stocks if s.get("golden_score", 0) == 0)
-    platinum = sum(1 for s in stocks if s.get("is_platinum"))
-    sectors = {}
-    for s in stocks:
-        sec = s.get("sector", "Unknown")
-        sectors[sec] = sectors.get(sec, 0) + 1
-    avg_news = sum(s.get("news_count", 0) for s in stocks) / len(stocks) if stocks else 0
+        result["payload"] = {
+            "status": "ok",
+            "stocks": len(stocks),
+            "edges": len(edges),
+            "platinum": sum(1 for s in stocks if s.get("is_platinum")),
+            "null_tickers": sum(1 for s in stocks if not s.get("ticker")),
+            "null_sectors": sum(1 for s in stocks if not s.get("sector")),
+            "sectors": sectors,
+            "build_quality": quality,
+        }
+    else:
+        result["payload"] = {"status": "missing"}
 
-    return {
-        "status": "ok",
-        "payload_stocks": len(stocks),
-        "payload_edges": len(edges),
-        "platinum_stocks": platinum,
-        "null_tickers": null_tickers,
-        "null_sectors": null_sectors,
-        "zero_golden_scores": zero_scores,
-        "avg_news_per_stock": round(avg_news, 1),
-        "sector_distribution": sectors,
-        "build_quality": quality,
-    }
+    result["source"] = "databricks" if db_client.is_connected else "local_payload"
+    return result
 
+
+# ── WebSocket Agent Stream ────────────────────────────────────────────────
 
 @app.websocket("/ws/agent-stream")
 async def websocket_endpoint(websocket: WebSocket):
@@ -181,6 +239,8 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
+
+# ── News Injection ────────────────────────────────────────────────────────
 
 @app.post("/inject-news")
 async def inject_news(payload: NewsInput):
@@ -216,19 +276,23 @@ async def inject_news(payload: NewsInput):
         analysis = gemini_result.get("analysis", "")
         trade_suggestion = gemini_result.get("trade_suggestion", "")
 
-        # Build agent reactions so 3D agents respond to the news
+        # Build agent reactions (uses HMM regime + FinBERT from Databricks)
         sentiment_for_reaction = {"label": sentiment_label, "score": score}
         agent_reaction = await db_client.compute_agent_reaction(
             sentiment_for_reaction, affected
         )
 
-        # Broadcast to connected clients (includes agent_reaction for 3D agent movement)
+        # Get current regime for response
+        regime = await db_client.get_current_regime()
+
+        # Broadcast to connected clients
         await manager.broadcast({
             "type": "breaking_news",
             "news": news_text[:500],
             "sentiment": {"label": sentiment_label, "score": score},
             "affected_tickers": affected,
             "agent_reaction": agent_reaction,
+            "regime": regime.get("regime", "Neutral"),
         })
 
         return {
@@ -237,24 +301,31 @@ async def inject_news(payload: NewsInput):
             "affected_tickers": affected,
             "analysis": analysis,
             "trade_suggestion": trade_suggestion,
+            "regime": regime.get("regime", "Neutral"),
             "message": f"Analyzed by Gemini AI ({source})",
+            "engine": "gemini + databricks" if db_client.is_connected else "gemini + fallback",
         }
 
-    # Fallback: keyword-based analysis
+    # Fallback: keyword-based analysis (or FinBERT if Databricks is connected)
     sentiment = await db_client.analyze_sentiment(news_text)
     affected_stocks = await db_client.get_affected_stocks(news_text)
     agent_reaction = await db_client.compute_agent_reaction(sentiment, affected_stocks)
+    regime = await db_client.get_current_regime()
 
     await manager.broadcast({
         "type": "breaking_news",
         "news": news_text[:500],
         "sentiment": sentiment,
         "agent_reaction": agent_reaction,
+        "regime": regime.get("regime", "Neutral"),
     })
 
+    engine = "finbert" if db_client.is_connected else "keyword"
     return {
         "sentiment": sentiment.get("label", "neutral"),
         "score": sentiment.get("score", 0.0),
         "affected_tickers": affected_stocks,
-        "message": f"Processed by keyword engine ({source})",
+        "regime": regime.get("regime", "Neutral"),
+        "message": f"Processed by {engine} engine ({source})",
+        "engine": engine,
     }
