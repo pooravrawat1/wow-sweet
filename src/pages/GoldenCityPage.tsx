@@ -13,7 +13,7 @@ const TimeSlider = lazy(() => import('../components/TimeSlider'));
 const SectorFilter = lazy(() => import('../components/SectorFilter'));
 const StoreDetail = lazy(() => import('../components/StoreDetail'));
 const AgentLeaderboard = lazy(() => import('../components/AgentLeaderboard'));
-const NewsInjector = lazy(() => import('../components/NewsInjector'));
+const FuturePredictions = lazy(() => import('../components/FuturePredictions'));
 
 const PAGE_BG = '#1a1a2e';
 
@@ -102,9 +102,9 @@ export default function GoldenCityPage() {
       {/* Whale Arena Leaderboard — right side */}
       <WhaleLeaderboard />
 
-      {/* News Injector — top right floating panel */}
+      {/* Future Predictions — top right floating panel */}
       <Suspense fallback={null}>
-        <NewsInjector />
+        <FuturePredictions />
       </Suspense>
 
       {/* Store detail panel — shown when a stock is selected (fixed overlay) */}
