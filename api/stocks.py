@@ -67,15 +67,12 @@ def _b(val):
 def _build_payload() -> dict:
     """Query golden_tickets for latest date snapshot."""
     rows = _query_databricks("SELECT MAX(Date) AS d FROM sweetreturns.gold.golden_tickets")
-    if not rows:
-        return {"stocks": [], "source": "empty-no-rows"}
-
-    if rows[0].get("_error"):
-        return {"stocks": [], "source": "error-max-date", "debug": rows[0]}
+    if not rows or rows[0].get("_error"):
+        return {"stocks": [], "source": "empty"}
 
     latest_date = rows[0].get("d")
     if not latest_date:
-        return {"stocks": [], "source": "empty-no-date", "debug_keys": list(rows[0].keys())}
+        return {"stocks": [], "source": "empty"}
 
     # Use SELECT * to handle any column naming convention, then map in Python.
     # The gold table may have canonical names (ticket_1_dip) or legacy names (dip_ticket).
@@ -88,11 +85,8 @@ def _build_payload() -> dict:
         [latest_date],
     )
 
-    if not stock_rows:
-        return {"stocks": [], "source": "empty-no-stock-rows"}
-
-    if stock_rows[0].get("_error"):
-        return {"stocks": [], "source": "error-stock-query", "debug": stock_rows[0]}
+    if not stock_rows or stock_rows[0].get("_error"):
+        return {"stocks": [], "source": "empty"}
 
     def _g(row, *keys, default=None):
         """Get first non-None value from multiple possible column names."""
@@ -257,7 +251,6 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(payload).encode())
         except Exception as e:
-            import traceback
             self.send_response(500)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -266,5 +259,4 @@ class handler(BaseHTTPRequestHandler):
                 "stocks": [],
                 "source": "error",
                 "error": str(e)[:200],
-                "trace": traceback.format_exc()[-500:],
             }).encode())
