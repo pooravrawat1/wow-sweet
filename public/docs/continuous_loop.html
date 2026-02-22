@@ -1,0 +1,249 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Continuous Pipeline Loop &mdash; Wolf of Wall Sweet 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Deployment" href="deployment.html" />
+    <link rel="prev" title="API Endpoints" href="api_endpoints.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Wolf of Wall Sweet
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#system-components">System Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#data-flow">Data Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#golden-ticket-system">Golden Ticket System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#frontend-data-fallback">Frontend Data Fallback</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Databricks Pipeline</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#cli-runner">CLI Runner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#bronze-layer">Bronze Layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#silver-layer">Silver Layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#gold-layer">Gold Layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#incremental-processing">Incremental Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api_endpoints.html">API Endpoints</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#get-api-health">GET /api/health</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#get-api-stocks">GET /api/stocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#post-api-simulation">POST /api/simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#get-api-simulation-history">GET /api/simulation_history</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#get-api-advance">GET /api/advance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_endpoints.html#get-api-advance-status">GET /api/advance_status</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Continuous Pipeline Loop</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#loop-architecture">Loop Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#trigger-mechanisms">Trigger Mechanisms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#simulation-feedback">Simulation Feedback</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tables">Tables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dataset-wrapping">Dataset Wrapping</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#vercel-setup">Vercel Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#databricks-setup">Databricks Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#building-documentation">Building Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#frontend-build">Frontend Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#testing-endpoints">Testing Endpoints</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Wolf of Wall Sweet</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Continuous Pipeline Loop</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/continuous_loop.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="continuous-pipeline-loop">
+<h1>Continuous Pipeline Loop<a class="headerlink" href="#continuous-pipeline-loop" title="Link to this heading"></a></h1>
+<p>The system runs as a self-sustaining feedback loop between Databricks and
+the frontend. No manual intervention is needed once deployed.</p>
+<section id="loop-architecture">
+<h2>Loop Architecture<a class="headerlink" href="#loop-architecture" title="Link to this heading"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>┌──────────────────────────────────────────────────────┐
+│                                                      │
+▼                                                      │
+DATABRICKS (advance_snapshot.py)                       │
+│  Process next trading day                            │
+│  bronze → silver features → gold tickets             │
+│  + Read simulation_results from previous cycle       │
+│  + Blend crowd sentiment into direction biases       │
+│                                                      │
+▼                                                      │
+/api/stocks (Vercel Serverless)                        │
+│  Serves latest snapshot from golden_tickets          │
+│  60s CDN cache                                       │
+│                                                      │
+▼                                                      │
+FRONTEND (React, polls every 60s)                      │
+│  Detects new snapshot_date → refreshes city          │
+│  24 agents + 4 whale funds trade all 609 stocks      │
+│  Generates trade P&amp;L + crowd metrics per store       │
+│                                                      │
+▼                                                      │
+/api/simulation (Vercel POST)                          │
+│  Writes trade results to simulation_results table    │
+│  Fire-and-forget (doesn&#39;t block UI)                  │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+</pre></div>
+</div>
+</section>
+<section id="trigger-mechanisms">
+<h2>Trigger Mechanisms<a class="headerlink" href="#trigger-mechanisms" title="Link to this heading"></a></h2>
+<p>Three redundant trigger mechanisms ensure the pipeline keeps advancing:</p>
+<ol class="arabic">
+<li><p><strong>Vercel Cron</strong> — <code class="docutils literal notranslate"><span class="pre">vercel.json</span></code> schedules <code class="docutils literal notranslate"><span class="pre">/api/advance</span></code> every 5 minutes.
+Requires Vercel Pro plan for sub-daily frequency.</p></li>
+<li><p><strong>Frontend Staleness Detection</strong> — If <code class="docutils literal notranslate"><span class="pre">/api/stocks</span></code> returns the same
+<code class="docutils literal notranslate"><span class="pre">snapshot_date</span></code> for 3 consecutive polls (3 minutes), the frontend
+auto-calls <code class="docutils literal notranslate"><span class="pre">/api/advance</span></code> to request a new day. Re-triggers every
+10 minutes if still stale.</p></li>
+<li><p><strong>Databricks Jobs</strong> (optional) — The CLI can create a native Databricks
+scheduled job:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>databricks/cli_pipeline.py<span class="w"> </span>--step<span class="w"> </span>create-job
+python<span class="w"> </span>databricks/cli_pipeline.py<span class="w"> </span>--step<span class="w"> </span>start-loop
+python<span class="w"> </span>databricks/cli_pipeline.py<span class="w"> </span>--step<span class="w"> </span>stop-loop
+python<span class="w"> </span>databricks/cli_pipeline.py<span class="w"> </span>--step<span class="w"> </span>loop-status
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="simulation-feedback">
+<h2>Simulation Feedback<a class="headerlink" href="#simulation-feedback" title="Link to this heading"></a></h2>
+<p>The loop creates a reinforcement signal:</p>
+<ul class="simple">
+<li><p><strong>Crowd sentiment</strong> flows back to Databricks via <code class="docutils literal notranslate"><span class="pre">simulation_results</span></code></p></li>
+<li><p><strong>Direction biases</strong> are blended: 80% technical analysis + 20% crowd sentiment</p></li>
+<li><p><strong>Agent learning</strong>: agents bias toward historically profitable tickers (30% of decisions)
+and boost historically best actions by 20% weight</p></li>
+<li><p><strong>History endpoint</strong>: <code class="docutils literal notranslate"><span class="pre">/api/simulation_history</span></code> provides aggregated performance data</p></li>
+</ul>
+</section>
+<section id="tables">
+<h2>Tables<a class="headerlink" href="#tables" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Table</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sweetreturns.bronze.raw_stock_data</span></code></p></td>
+<td><p>Raw stock prices from Kaggle CSV</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sweetreturns.silver.stock_features</span></code></p></td>
+<td><p>50+ technical indicators per ticker/date</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sweetreturns.gold.golden_tickets</span></code></p></td>
+<td><p>Final scored stocks served to frontend</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sweetreturns.gold.simulation_results</span></code></p></td>
+<td><p>Frontend simulation feedback (trades +
+crowd metrics) used by next cycle</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="dataset-wrapping">
+<h2>Dataset Wrapping<a class="headerlink" href="#dataset-wrapping" title="Link to this heading"></a></h2>
+<p>When all dates in the Kaggle dataset (2012-2017) are consumed,
+<code class="docutils literal notranslate"><span class="pre">advance_snapshot.py</span></code> wraps around:</p>
+<ol class="arabic simple">
+<li><p>Detects no more dates after current MAX(Date)</p></li>
+<li><p>Clears <code class="docutils literal notranslate"><span class="pre">golden_tickets</span></code> (<code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">FROM</span></code>)</p></li>
+<li><p>Restarts from the 253rd date (ensures enough lookback)</p></li>
+<li><p>The cycle continues indefinitely</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api_endpoints.html" class="btn btn-neutral float-left" title="API Endpoints" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="deployment.html" class="btn btn-neutral float-right" title="Deployment" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, SweetReturns Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

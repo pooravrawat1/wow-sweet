@@ -1,0 +1,270 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Endpoints &mdash; Wolf of Wall Sweet 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Continuous Pipeline Loop" href="continuous_loop.html" />
+    <link rel="prev" title="Databricks Pipeline" href="pipeline.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Wolf of Wall Sweet
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#system-components">System Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#data-flow">Data Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#golden-ticket-system">Golden Ticket System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#frontend-data-fallback">Frontend Data Fallback</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Databricks Pipeline</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#cli-runner">CLI Runner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#bronze-layer">Bronze Layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#silver-layer">Silver Layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#gold-layer">Gold Layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#incremental-processing">Incremental Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Endpoints</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#get-api-health">GET /api/health</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#get-api-stocks">GET /api/stocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#post-api-simulation">POST /api/simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#get-api-simulation-history">GET /api/simulation_history</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#get-api-advance">GET /api/advance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#get-api-advance-status">GET /api/advance_status</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="continuous_loop.html">Continuous Pipeline Loop</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="continuous_loop.html#loop-architecture">Loop Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="continuous_loop.html#trigger-mechanisms">Trigger Mechanisms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="continuous_loop.html#simulation-feedback">Simulation Feedback</a></li>
+<li class="toctree-l2"><a class="reference internal" href="continuous_loop.html#tables">Tables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="continuous_loop.html#dataset-wrapping">Dataset Wrapping</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="deployment.html">Deployment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#vercel-setup">Vercel Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#databricks-setup">Databricks Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#building-documentation">Building Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#frontend-build">Frontend Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html#testing-endpoints">Testing Endpoints</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Wolf of Wall Sweet</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API Endpoints</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/api_endpoints.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="api-endpoints">
+<h1>API Endpoints<a class="headerlink" href="#api-endpoints" title="Link to this heading"></a></h1>
+<p>All endpoints are Vercel serverless functions in the <code class="docutils literal notranslate"><span class="pre">api/</span></code> directory.
+They use the Databricks SQL Statement REST API to query Delta Lake tables.</p>
+<section id="get-api-health">
+<h2>GET /api/health<a class="headerlink" href="#get-api-health" title="Link to this heading"></a></h2>
+<p>Returns backend health and Databricks connectivity status.</p>
+<p><strong>Response:</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;healthy&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;databricks&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;databricks_configured&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;databricks_status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;connected&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;stocks_available&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="get-api-stocks">
+<h2>GET /api/stocks<a class="headerlink" href="#get-api-stocks" title="Link to this heading"></a></h2>
+<p>Returns the latest snapshot of stock data from <code class="docutils literal notranslate"><span class="pre">golden_tickets</span></code>.
+Handles both legacy and canonical column naming conventions via
+case-insensitive mapping.</p>
+<p><strong>Response:</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;stocks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;correlation_edges&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="nt">&quot;snapshot_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2017-11-10&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;stock_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">609</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;databricks&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Each stock includes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ticker</span></code>, <code class="docutils literal notranslate"><span class="pre">sector</span></code>, <code class="docutils literal notranslate"><span class="pre">close</span></code>, <code class="docutils literal notranslate"><span class="pre">daily_return</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">golden_score</span></code> (0-5), <code class="docutils literal notranslate"><span class="pre">ticket_levels</span></code> (5 booleans), <code class="docutils literal notranslate"><span class="pre">is_platinum</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">direction_bias</span></code>: { buy, call, put, short } (probabilities summing to ~1)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">store_dimensions</span></code>: { width, height, depth, glow }</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">forward_return_distribution</span></code>: { p5, p25, median, p75, p95, skew }</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">technicals</span></code>: { rsi_14, macd_histogram, bb_pct_b, zscore_20d, realized_vol_20d }</p></li>
+</ul>
+<p><strong>Cache:</strong> 60 seconds (<code class="docutils literal notranslate"><span class="pre">s-maxage=60</span></code>)</p>
+</section>
+<section id="post-api-simulation">
+<h2>POST /api/simulation<a class="headerlink" href="#post-api-simulation" title="Link to this heading"></a></h2>
+<p>Writes simulation results (agent trades + crowd metrics) back to Databricks.
+Auto-creates the <code class="docutils literal notranslate"><span class="pre">simulation_results</span></code> table on first use.</p>
+<p><strong>Request:</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;snapshot_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2017-11-10&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;trades&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;ticker&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AAPL&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;agent_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CandyTrader&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BUY&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;profit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">250.50</span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;crowd_metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;ticker&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AAPL&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;buy&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;call&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;put&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;short&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Response:</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ok&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;rows_inserted&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;trades_received&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;crowd_received&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;snapshot_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2017-11-10&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Limits:</strong> 100 trades + 600 crowd metrics per submission, 500KB payload max.</p>
+</section>
+<section id="get-api-simulation-history">
+<h2>GET /api/simulation_history<a class="headerlink" href="#get-api-simulation-history" title="Link to this heading"></a></h2>
+<p>Returns aggregated simulation performance data for agent learning.</p>
+<p><strong>Response includes:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">crowd_sentiment</span></code>: per-ticker per-date crowd counts (last 5 snapshots)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">agent_leaderboard</span></code>: top 30 agents by total profit</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ticker_performance</span></code>: top 100 tickers by avg profit with best_action</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cycles</span></code>: { count, first_date, last_date, total_records }</p></li>
+</ul>
+<p><strong>Cache:</strong> 120 seconds</p>
+</section>
+<section id="get-api-advance">
+<h2>GET /api/advance<a class="headerlink" href="#get-api-advance" title="Link to this heading"></a></h2>
+<p>Triggers the advance_snapshot pipeline on Databricks to process the next
+trading day. Called by Vercel cron and the frontend staleness detector.</p>
+<p><strong>Response (submitted):</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;submitted&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Advance snapshot submitted as run 12345&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;run_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;cluster_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0123-456789-abc&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Response (already running):</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;already_running&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Run 12345 is already in progress&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;run&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;run_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;lifecycle&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RUNNING&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="get-api-advance-status">
+<h2>GET /api/advance_status<a class="headerlink" href="#get-api-advance-status" title="Link to this heading"></a></h2>
+<p>Returns pipeline status: current snapshot date, cluster state, recent runs.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ok&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;pipeline&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;current_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2017-11-10&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;total_dates_processed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;total_rows&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">609</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;simulation_cycles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;simulation_records&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">582</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sweetreturns&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RUNNING&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;recent_runs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pipeline.html" class="btn btn-neutral float-left" title="Databricks Pipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="continuous_loop.html" class="btn btn-neutral float-right" title="Continuous Pipeline Loop" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, SweetReturns Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
