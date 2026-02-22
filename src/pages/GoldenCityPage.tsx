@@ -6,7 +6,7 @@ import { Suspense, lazy } from 'react';
 import { useStore } from '../store/useStore';
 import { WhaleLeaderboard } from '../components/WhaleLeaderboard';
 import { AgentLeaderboard } from '../components/AgentLeaderboard';
-import NewsInjector from '../components/NewsInjector';
+import { DraggablePanel } from '../components/DraggablePanel';
 
 // Lazy-load heavy 3D components
 const CandyCity = lazy(() => import('../components/CandyCity'));
@@ -67,87 +67,40 @@ export default function GoldenCityPage() {
         </Suspense>
       )}
 
-      {/* ── LEFT COLUMN (overlay) ── */}
-      <div style={{
-        position: 'absolute',
-        top: 8,
-        left: 8,
-        width: 220,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        zIndex: 20,
-      }}>
-        {/* Top 5 Agents box */}
-        <div style={{
-          overflow: 'hidden',
-          background: 'rgba(255,255,255,0.72)',
-          border: '1.5px solid rgba(106,0,170,0.13)',
-          borderRadius: 16,
-          boxShadow: '0 2px 16px rgba(106,0,170,0.08)',
-          backdropFilter: 'blur(6px)',
-        }}>
-          <AgentLeaderboard />
-        </div>
-        {/* Whale Arena box */}
-        <div style={{
-          overflow: 'hidden',
-          background: 'rgba(255,255,255,0.72)',
-          border: '1.5px solid rgba(106,0,170,0.13)',
-          borderRadius: 16,
-          boxShadow: '0 2px 16px rgba(106,0,170,0.08)',
-          backdropFilter: 'blur(6px)',
-        }}>
-          <WhaleLeaderboard />
-        </div>
-      </div>
+      {/* ── DRAGGABLE PANELS ── */}
 
-      {/* ── RIGHT COLUMN (overlay) ── */}
-      <div style={{
-        position: 'absolute',
-        top: 8, right: 8, bottom: 8,
-        width: 380,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        zIndex: 20,
-        pointerEvents: 'none',
-      }}>
-        {/* News Injector */}
-        <div style={{
-          flex: 1,
-          background: 'rgba(255,255,255,0.72)',
-          border: '1.5px solid rgba(106,0,170,0.13)',
-          borderRadius: 16,
-          overflow: 'hidden',
-          boxShadow: '0 2px 16px rgba(106,0,170,0.08)',
-          backdropFilter: 'blur(6px)',
-          display: 'flex',
-          flexDirection: 'column',
-          pointerEvents: 'auto',
-        }}>
-          <Suspense fallback={null}>
-            <NewsInjector />
-          </Suspense>
-        </div>
-        {/* Future Predictions */}
-        <div style={{
-          flex: 1,
-          background: 'rgba(255,255,255,0.72)',
-          border: '1.5px solid rgba(106,0,170,0.13)',
-          borderRadius: 16,
-          overflow: 'hidden',
-          boxShadow: '0 2px 16px rgba(106,0,170,0.08)',
-          backdropFilter: 'blur(6px)',
-          display: 'flex',
-          flexDirection: 'column',
-          pointerEvents: 'auto',
-        }}>
-          <Suspense fallback={null}>
-            <FuturePredictions />
-          </Suspense>
-        </div>
-      </div>
+      {/* Top 5 Agents — draggable + collapsible */}
+      <DraggablePanel
+        title="Top 5 Agents"
+        defaultPosition={{ x: 8, y: 66 }}
+        width={220}
+        maxHeight={400}
+      >
+        <AgentLeaderboard />
+      </DraggablePanel>
+
+      {/* Whale Arena — draggable + collapsible */}
+      <DraggablePanel
+        title="Whale Arena"
+        defaultPosition={{ x: 8, y: 380 }}
+        width={220}
+        maxHeight={360}
+      >
+        <WhaleLeaderboard />
+      </DraggablePanel>
+
+      {/* Future Predictions — collapsible only (no drag) */}
+      <DraggablePanel
+        title="Future Predictions"
+        defaultPosition={{ x: typeof window !== 'undefined' ? window.innerWidth - 396 : 900, y: 66 }}
+        width={380}
+        maxHeight={600}
+        draggable={false}
+      >
+        <Suspense fallback={null}>
+          <FuturePredictions />
+        </Suspense>
+      </DraggablePanel>
     </div>
   );
 }
