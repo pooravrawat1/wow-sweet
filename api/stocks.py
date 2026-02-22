@@ -246,8 +246,8 @@ class handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
-            # 60s cache for continuous loop (was 300s)
-            self.send_header("Cache-Control", "s-maxage=60, stale-while-revalidate=30")
+            # Short cache for 10s advance loop
+            self.send_header("Cache-Control", "s-maxage=5, stale-while-revalidate=5")
             self.end_headers()
             self.wfile.write(json.dumps(payload).encode())
         except Exception as e:

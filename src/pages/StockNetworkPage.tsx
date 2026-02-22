@@ -149,9 +149,9 @@ const D3FallbackGraph: React.FC<{
           const hookEndBy = hby - (dy / len) * hookR * 0.7 - ny * hookR * 0.7;
           const pathB = `M ${t.x} ${t.y} L ${hbx} ${hby} Q ${hbx - nx * hookR} ${hby - ny * hookR} ${hookEndBx} ${hookEndBy}`;
 
-          const baseOpacity = isHighlighted ? 0.9 : 0.15;
+          const baseOpacity = isHighlighted ? 0.9 : 0.35;
           const width = isHighlighted ? 1.8 : 0.6;
-          const stripeColor = isHighlighted ? ACCENT : '#cc3333';
+          const stripeColor = isHighlighted ? ACCENT : '#ffffff';
 
           return (
             <g key={idx}>
@@ -704,10 +704,10 @@ export default function StockNetworkPage() {
               if (highlightedNode && (src === highlightedNode || tgt === highlightedNode)) {
                 return '#FFD700';
               }
-              if (highlightedNode) return '#0a0a15';
-              return '#333355';
+              if (highlightedNode) return '#333344';
+              return '#ffffff';
             }}
-            linkOpacity={highlightedNode ? 0.8 : 0.15}
+            linkOpacity={highlightedNode ? 0.8 : 0.25}
             linkVisibility={(link: any) => {
               if (!highlightedNode) return true;
               const src = typeof link.source === 'object' ? link.source.id : link.source;

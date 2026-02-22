@@ -188,6 +188,7 @@ export default function App() {
   const setDataSource = useStore((s) => s.setDataSource);
   const setBackendConnected = useStore((s) => s.setBackendConnected);
   const setDatabricksConnected = useStore((s) => s.setDatabricksConnected);
+  const setSnapshotDate = useStore((s) => s.setSnapshotDate);
   const baseStocks = useStore((s) => s.baseStocks);
   const timeSlider = useStore((s) => s.timeSlider);
 
@@ -233,25 +234,30 @@ export default function App() {
     };
   }, [setStocks, setBaseStocks, setCorrelationEdges, setAgentLeaderboard, setDataSource, setBackendConnected, setDatabricksConnected]);
 
-  // Auto-refresh: poll for new data every 60 seconds
-  // Auto-trigger advance when data goes stale (same date for 3+ polls)
+  // Advance pipeline every 10s, poll stocks every 10s to pick up new dates
   const snapshotDateRef = useRef<string>('');
-  const stalePollCountRef = useRef(0);
-  const advanceTriggeredRef = useRef(false);
+  const advancingRef = useRef(false);
   useEffect(() => {
     if (baseStocks.length === 0) return;
 
-    const pollInterval = setInterval(async () => {
+    const tick = setInterval(async () => {
+      // Fire advance (non-blocking — don't await, let it run in background)
+      if (!advancingRef.current) {
+        advancingRef.current = true;
+        apiClient.triggerAdvance()
+          .then((r) => { if (r?.action === 'advanced') console.log(`[SweetReturns] ${r.message}`); })
+          .catch(() => {})
+          .finally(() => { advancingRef.current = false; });
+      }
+
+      // Fetch latest stocks
       try {
         const result = await apiClient.fetchStocksWithDate();
         if (!result || result.stocks.length === 0) return;
 
-        // Only refresh if snapshot_date changed (Databricks advanced to next day)
         if (result.snapshot_date && result.snapshot_date !== snapshotDateRef.current) {
-          console.log(`[SweetReturns] New snapshot detected: ${snapshotDateRef.current} → ${result.snapshot_date}`);
+          console.log(`[SweetReturns] New snapshot: ${snapshotDateRef.current} → ${result.snapshot_date}`);
           snapshotDateRef.current = result.snapshot_date;
-          stalePollCountRef.current = 0;
-          advanceTriggeredRef.current = false;
 
           const parsed = result.stocks.map((s: any) => ({
             ...s,
@@ -264,39 +270,19 @@ export default function App() {
           setBaseStocks(parsed);
           setStocks(parsed);
           setDataSource('databricks');
+          setSnapshotDate(result.snapshot_date);
 
-          // Process the new day's trades
           processDay(result.snapshot_date, parsed);
           setAgentLeaderboard(getLeaderboard());
-
-          // Refresh simulation history so agents learn from past cycles
           loadSimulationHistory();
-        } else {
-          // Same date — track staleness
-          stalePollCountRef.current++;
-
-          // After 3 consecutive stale polls (3 min), trigger advance
-          if (stalePollCountRef.current >= 3 && !advanceTriggeredRef.current) {
-            advanceTriggeredRef.current = true;
-            console.log(`[SweetReturns] Data stale for ${stalePollCountRef.current} polls — triggering advance`);
-            const advResult = await apiClient.triggerAdvance();
-            if (advResult) {
-              console.log(`[SweetReturns] Advance trigger: ${advResult.action} — ${advResult.message || ''}`);
-            }
-          }
-
-          // Re-trigger every 10 polls (10 min) if still stale
-          if (stalePollCountRef.current > 0 && stalePollCountRef.current % 10 === 0) {
-            advanceTriggeredRef.current = false;
-          }
         }
       } catch {
         // Silently ignore polling errors
       }
-    }, 60_000);
+    }, 10_000);
 
-    return () => clearInterval(pollInterval);
-  }, [baseStocks, setBaseStocks, setStocks, setDataSource, setAgentLeaderboard]);
+    return () => clearInterval(tick);
+  }, [baseStocks, setBaseStocks, setStocks, setDataSource, setAgentLeaderboard, setSnapshotDate]);
 
   // Time modulation: update biases when date/mode changes (without re-initializing simulation)
   useEffect(() => {

@@ -6,6 +6,8 @@ import { Suspense, lazy } from 'react';
 import { useStore } from '../store/useStore';
 import { WhaleLeaderboard } from '../components/WhaleLeaderboard';
 import { AgentLeaderboard } from '../components/AgentLeaderboard';
+import { DraggablePanel } from '../components/DraggablePanel';
+import { DayProgressBar } from '../components/DayProgressBar';
 import NewsInjector from '../components/NewsInjector';
 
 // Lazy-load heavy 3D components
@@ -13,6 +15,7 @@ const CandyCity = lazy(() => import('../components/CandyCity'));
 const TimeSlider = lazy(() => import('../components/TimeSlider'));
 const SectorFilter = lazy(() => import('../components/SectorFilter'));
 const StoreDetail = lazy(() => import('../components/StoreDetail'));
+const FuturePredictions = lazy(() => import('../components/FuturePredictions'));
 const FONT = `'Leckerli One', cursive`;
 
 export default function GoldenCityPage() {
@@ -41,7 +44,7 @@ export default function GoldenCityPage() {
         </div>
       </Suspense>
 
-      {/* Sector filter — top left (above left panel) */}
+      {/* Sector filter — top left */}
       <Suspense fallback={null}>
         <div style={{ position: 'absolute', top: 12, left: 236, zIndex: 10 }}>
           <SectorFilter />
@@ -59,6 +62,9 @@ export default function GoldenCityPage() {
         </div>
       </Suspense>
 
+      {/* Day Progress Bar — above time slider */}
+      <DayProgressBar />
+
       {/* Store detail */}
       {selectedStock !== null && (
         <Suspense fallback={null}>
@@ -66,61 +72,51 @@ export default function GoldenCityPage() {
         </Suspense>
       )}
 
-      {/* ── LEFT COLUMN (overlay) ── */}
-      <div style={{
-        position: 'absolute',
-        top: 8,
-        left: 8,
-        width: 220,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        zIndex: 20,
-      }}>
-        {/* Top 5 Agents box */}
-        <div style={{
-          overflow: 'hidden',
-          background: 'rgba(255,255,255,0.72)',
-          border: '1.5px solid rgba(106,0,170,0.13)',
-          borderRadius: 16,
-          boxShadow: '0 2px 16px rgba(106,0,170,0.08)',
-          backdropFilter: 'blur(6px)',
-        }}>
-          <AgentLeaderboard />
-        </div>
-        {/* Whale Arena box */}
-        <div style={{
-          overflow: 'hidden',
-          background: 'rgba(255,255,255,0.72)',
-          border: '1.5px solid rgba(106,0,170,0.13)',
-          borderRadius: 16,
-          boxShadow: '0 2px 16px rgba(106,0,170,0.08)',
-          backdropFilter: 'blur(6px)',
-        }}>
-          <WhaleLeaderboard />
-        </div>
-      </div>
+      {/* ── DRAGGABLE PANELS ── */}
 
-      {/* ── RIGHT PANEL: Future Prediction (overlay) ── */}
-      <div style={{
-        position: 'absolute',
-        top: 8, right: 8, bottom: 8,
-        width: 380,
-        background: 'rgba(255,255,255,0.72)',
-        border: '1.5px solid rgba(106,0,170,0.13)',
-        borderRadius: 16,
-        overflow: 'hidden',
-        boxShadow: '0 2px 16px rgba(106,0,170,0.08)',
-        zIndex: 20,
-        backdropFilter: 'blur(6px)',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
-        {/* Injector fills everything */}
+      {/* Top 5 Agents — draggable */}
+      <DraggablePanel
+        title="Top 5 Agents"
+        defaultPosition={{ x: 8, y: 66 }}
+        width={220}
+        maxHeight={400}
+      >
+        <AgentLeaderboard />
+      </DraggablePanel>
+
+      {/* Whale Arena — draggable */}
+      <DraggablePanel
+        title="Whale Arena"
+        defaultPosition={{ x: 8, y: 380 }}
+        width={220}
+        maxHeight={360}
+      >
+        <WhaleLeaderboard />
+      </DraggablePanel>
+
+      {/* News Injector — draggable */}
+      <DraggablePanel
+        title="News Injector"
+        defaultPosition={{ x: typeof window !== 'undefined' ? window.innerWidth - 396 : 900, y: 66 }}
+        width={380}
+        maxHeight={600}
+      >
         <Suspense fallback={null}>
           <NewsInjector />
         </Suspense>
-      </div>
+      </DraggablePanel>
+
+      {/* Future Predictions — draggable */}
+      <DraggablePanel
+        title="Future Predictions"
+        defaultPosition={{ x: typeof window !== 'undefined' ? window.innerWidth - 396 : 900, y: 420 }}
+        width={380}
+        maxHeight={500}
+      >
+        <Suspense fallback={null}>
+          <FuturePredictions />
+        </Suspense>
+      </DraggablePanel>
     </div>
   );
 }

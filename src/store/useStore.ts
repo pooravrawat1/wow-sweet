@@ -71,6 +71,10 @@ interface AppStore {
   geminiEnabled: boolean;
   setGeminiEnabled: (enabled: boolean) => void;
 
+  // --- Snapshot Date (for DayProgressBar) ---
+  snapshotDate: string;
+  setSnapshotDate: (date: string) => void;
+
   // --- Databricks Connection Status ---
   dataSource: 'databricks' | 'static' | 'synthetic' | 'loading';
   setDataSource: (source: 'databricks' | 'static' | 'synthetic' | 'loading') => void;
@@ -168,6 +172,10 @@ export const useStore = create<AppStore>((set) => ({
   // Gemini AI toggle
   geminiEnabled: true,
   setGeminiEnabled: (enabled) => set({ geminiEnabled: enabled }),
+
+  // Snapshot Date
+  snapshotDate: '',
+  setSnapshotDate: (date) => set({ snapshotDate: date }),
 
   // Databricks Connection Status
   dataSource: 'loading',

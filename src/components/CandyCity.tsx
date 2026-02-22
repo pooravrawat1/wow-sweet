@@ -11,6 +11,7 @@ import GroundPlane from './GroundPlane';
 import { CrowdSimulation } from './CrowdSimulation';
 import { CandyCaneNetwork } from './CandyCaneNetwork';
 import { CandyParticles } from './CandyParticles';
+import { ShockPropagation } from './ShockPropagation';
 import { FirstPersonControls } from './FirstPersonControls';
 import { useStore } from '../store/useStore';
 
@@ -159,6 +160,9 @@ export default function CandyCity() {
 
         {/* Platinum store particle effects */}
         <CandyParticles />
+
+        {/* Shock propagation rings */}
+        <ShockPropagation />
 
         {/* Camera: orbit or first-person */}
         {povMode ? <FirstPersonControls /> : <CameraController enabled={!povMode} />}
