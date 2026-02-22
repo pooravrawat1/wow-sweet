@@ -169,9 +169,9 @@ export default function CandyCity() {
         }}
         style={{
           position: 'fixed',
-          bottom: 16,
+          bottom: 76,
           left: 16,
-          zIndex: 1000,
+          zIndex: 1001,
           background: povMode ? '#FFD700' : 'rgba(16, 12, 30, 0.85)',
           color: povMode ? '#1a1a2e' : '#FFD700',
           border: '1px solid #FFD700',
