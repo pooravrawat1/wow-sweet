@@ -9,6 +9,7 @@ import { useStore } from '../store/useStore';
 import { generateStockData, loadPipelineData, SECTORS } from '../data/stockData';
 import { getWhales, type WhaleFund } from '../services/whaleArena';
 import { getFeaturedAgents, getLatestChain, type FeaturedAgent, type ReasoningChain } from '../services/geminiService';
+import { loadSimulationHistory, getSimulationStats, type SimulationStats } from '../services/tradeTracker';
 import { WHALE_ICONS } from '../components/CandyIcons';
 import type { StockData } from '../types';
 
@@ -35,7 +36,8 @@ function pressureColor(count: number, maxCount: number): string {
 const Leaderboard: React.FC<{
   whales: WhaleFund[];
   featuredAgents: FeaturedAgent[];
-}> = ({ whales, featuredAgents }) => {
+  simStats: SimulationStats;
+}> = ({ whales, featuredAgents, simStats }) => {
   const sorted = [...whales].sort((a, b) => b.totalProfit - a.totalProfit);
   const activeAgents = featuredAgents.filter(
     (a) => a.decision && Date.now() - a.lastUpdated < 30000,
@@ -196,6 +198,70 @@ const Leaderboard: React.FC<{
                 </span>
                 <span style={{ color: '#888', fontSize: 9, marginLeft: 4 }}>
                   {agent.decision?.targetTicker}
+                </span>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Simulation Intelligence — historical performance from Databricks */}
+      {simStats.isLoaded && simStats.topTickers.length > 0 && (
+        <>
+          <h3
+            style={{
+              color: '#FFD700',
+              fontSize: 11,
+              margin: '14px 0 8px',
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+            }}
+          >
+            Simulation Intelligence
+          </h3>
+          <div
+            style={{
+              padding: '4px 6px',
+              background: 'rgba(255, 215, 0, 0.06)',
+              borderRadius: 4,
+              marginBottom: 6,
+              border: '1px solid rgba(255, 215, 0, 0.1)',
+            }}
+          >
+            <div style={{ fontSize: 9, color: '#FFD700' }}>
+              {simStats.cycleCount} tickers analyzed across simulation cycles
+            </div>
+          </div>
+          {simStats.topTickers.slice(0, 6).map((tp) => (
+            <div
+              key={tp.ticker}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '3px 4px',
+                borderBottom: `1px solid ${BORDER_COLOR}`,
+                fontSize: 10,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ color: '#FFD700', fontWeight: 600 }}>{tp.ticker}</span>
+                <span
+                  style={{
+                    color: tp.bestAction === 'BUY' || tp.bestAction === 'CALL' ? '#00FF7F' : '#FF4500',
+                    fontSize: 9,
+                    fontWeight: 600,
+                  }}
+                >
+                  {tp.bestAction}
+                </span>
+              </div>
+              <div style={{ textAlign: 'right', fontSize: 9 }}>
+                <span style={{ color: tp.avgProfit >= 0 ? '#00FF7F' : '#FF4500' }}>
+                  {tp.avgProfit >= 0 ? '+' : ''}{tp.avgProfit.toFixed(0)}
+                </span>
+                <span style={{ color: '#666', marginLeft: 3 }}>
+                  ({tp.tradeCount} trades)
                 </span>
               </div>
             </div>
@@ -960,6 +1026,7 @@ export default function AgentReactionsPage() {
   const [whales, setWhales] = useState<WhaleFund[]>(getWhales());
   const [featuredAgents, setFeaturedAgents] = useState<FeaturedAgent[]>(getFeaturedAgents());
   const [chain, setChain] = useState<ReasoningChain | null>(getLatestChain());
+  const [simStats, setSimStats] = useState<SimulationStats>(getSimulationStats());
 
   // Initialize stocks if empty
   useEffect(() => {
@@ -1021,7 +1088,17 @@ export default function AgentReactionsPage() {
       setWhales([...getWhales()]);
       setFeaturedAgents([...getFeaturedAgents()]);
       setChain(getLatestChain());
+      setSimStats(getSimulationStats());
     }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Load simulation history from Databricks (refreshes every 60s)
+  useEffect(() => {
+    loadSimulationHistory().then(() => setSimStats(getSimulationStats()));
+    const interval = setInterval(() => {
+      loadSimulationHistory().then(() => setSimStats(getSimulationStats()));
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -1064,7 +1141,7 @@ export default function AgentReactionsPage() {
     >
       {/* Left column — Whale + Agent Leaderboard */}
       <div style={{ minHeight: 0, overflow: 'hidden' }}>
-        <Leaderboard whales={whales} featuredAgents={featuredAgents} />
+        <Leaderboard whales={whales} featuredAgents={featuredAgents} simStats={simStats} />
       </div>
 
       {/* Center — Agent Heatmap */}

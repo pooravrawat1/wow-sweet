@@ -296,3 +296,32 @@ export function resetTracker(): void {
 export function isTrackerInitialized(): boolean {
   return initialized;
 }
+
+// ── Simulation stats for Agent Reactions display ──
+
+export interface SimulationStats {
+  topTickers: Array<{ ticker: string; avgProfit: number; bestAction: string; tradeCount: number }>;
+  cycleCount: number;
+  isLoaded: boolean;
+}
+
+export function getSimulationStats(): SimulationStats {
+  if (!historyLoaded || tickerPerformanceMap.size === 0) {
+    return { topTickers: [], cycleCount: 0, isLoaded: false };
+  }
+
+  const sorted = Array.from(tickerPerformanceMap.values())
+    .sort((a, b) => b.avg_profit - a.avg_profit)
+    .slice(0, 10);
+
+  return {
+    topTickers: sorted.map(tp => ({
+      ticker: tp.ticker,
+      avgProfit: tp.avg_profit,
+      bestAction: tp.best_action,
+      tradeCount: tp.trade_count,
+    })),
+    cycleCount: tickerPerformanceMap.size,
+    isLoaded: true,
+  };
+}

@@ -41,14 +41,15 @@ def _query_databricks(sql: str, params=None) -> list:
         with urlopen(req, timeout=9) as resp:
             body = json.loads(resp.read())
 
-        if body.get("status", {}).get("state") != "SUCCEEDED":
-            return []
+        state = body.get("status", {}).get("state")
+        if state != "SUCCEEDED":
+            return [{"_error": f"query state={state}", "_msg": body.get("status", {}).get("error", {}).get("message", "")[:200]}]
 
         columns = [c["name"] for c in body.get("manifest", {}).get("schema", {}).get("columns", [])]
         rows = body.get("result", {}).get("data_array", [])
         return [dict(zip(columns, row)) for row in rows]
-    except Exception:
-        return []
+    except Exception as exc:
+        return [{"_error": f"exception: {str(exc)[:200]}"}]
 
 
 def _f(val, default=0.0):
@@ -67,89 +68,75 @@ def _build_payload() -> dict:
     """Query golden_tickets for latest date snapshot."""
     rows = _query_databricks("SELECT MAX(Date) AS d FROM sweetreturns.gold.golden_tickets")
     if not rows:
-        return {"stocks": [], "source": "empty"}
+        return {"stocks": [], "source": "empty-no-rows"}
+
+    if rows[0].get("_error"):
+        return {"stocks": [], "source": "error-max-date", "debug": rows[0]}
 
     latest_date = rows[0].get("d")
     if not latest_date:
-        return {"stocks": [], "source": "empty"}
+        return {"stocks": [], "source": "empty-no-date", "debug_keys": list(rows[0].keys())}
 
-    # Query using COALESCE to handle both column naming conventions:
-    # - gold_tickets.py (canonical): ticket_1_dip, market_cap_percentile, buy_pct, etc.
-    # - legacy schema: dip_ticket, market_cap, momentum_5d, etc.
+    # Use SELECT * to handle any column naming convention, then map in Python.
+    # The gold table may have canonical names (ticket_1_dip) or legacy names (dip_ticket).
     stock_rows = _query_databricks(
         """
-        SELECT ticker, sector,
-               COALESCE(Close, close) AS close,
-               daily_return,
-               drawdown_pct, drawdown_percentile, volume_percentile, vol_percentile,
-               COALESCE(market_cap_percentile, market_cap, 0.5) AS market_cap_pctile,
-               golden_score,
-               COALESCE(ticket_1_dip, dip_ticket, false) AS t1_dip,
-               COALESCE(ticket_2_shock, shock_ticket, false) AS t2_shock,
-               COALESCE(ticket_3_asymmetry, asymmetry_ticket, false) AS t3_asymmetry,
-               COALESCE(ticket_4_dislocation, dislocation_ticket, false) AS t4_dislocation,
-               COALESCE(ticket_5_convexity, convexity_ticket, false) AS t5_convexity,
-               is_platinum,
-               rarity_percentile,
-               COALESCE(buy_pct, NULL) AS buy_pct,
-               COALESCE(call_pct, NULL) AS call_pct,
-               COALESCE(put_pct, NULL) AS put_pct,
-               COALESCE(short_pct, NULL) AS short_pct,
-               fwd_return_60d,
-               COALESCE(fwd_60d_skew, NULL) AS fwd_skew,
-               COALESCE(fwd_60d_p5, NULL) AS fwd_p5,
-               COALESCE(fwd_60d_p25, NULL) AS fwd_p25,
-               COALESCE(fwd_60d_median, NULL) AS fwd_median,
-               COALESCE(fwd_60d_p75, NULL) AS fwd_p75,
-               COALESCE(fwd_60d_p95, NULL) AS fwd_p95,
-               rsi_14, macd_histogram,
-               bb_pct_b, zscore_20d, realized_vol_20d,
-               COALESCE(store_width, NULL) AS store_width,
-               COALESCE(store_height, NULL) AS store_height,
-               COALESCE(store_depth, NULL) AS store_depth,
-               COALESCE(store_glow, NULL) AS store_glow,
-               COALESCE(agent_density, NULL) AS agent_density,
-               COALESCE(speed_multiplier, NULL) AS speed_multiplier
+        SELECT *
         FROM sweetreturns.gold.golden_tickets
         WHERE date = %s
-        ORDER BY sector, market_cap_pctile DESC
         """,
         [latest_date],
     )
 
     if not stock_rows:
-        return {"stocks": [], "source": "empty"}
+        return {"stocks": [], "source": "empty-no-stock-rows"}
+
+    if stock_rows[0].get("_error"):
+        return {"stocks": [], "source": "error-stock-query", "debug": stock_rows[0]}
+
+    def _g(row, *keys, default=None):
+        """Get first non-None value from multiple possible column names."""
+        for k in keys:
+            v = row.get(k)
+            if v is not None:
+                return v
+        return default
 
     stocks = []
-    for row in stock_rows:
-        gs = int(_f(row.get("golden_score")))
-        fwd60 = _f(row.get("fwd_return_60d"))
-        dd = _f(row.get("drawdown_pct"))
-        vol = _f(row.get("realized_vol_20d"))
-        mcp = _f(row.get("market_cap_pctile"), 0.5)
+    # Case-insensitive key lookup: Databricks may return Title_Case or lower_case
+    def _row_ci(row):
+        return {k.lower(): v for k, v in row.items()}
+
+    for raw_row in stock_rows:
+        row = _row_ci(raw_row)
+        gs = int(_f(_g(row, "golden_score", default=0)))
+        fwd60 = _f(_g(row, "fwd_return_60d", default=0))
+        dd = _f(_g(row, "drawdown_pct", default=0))
+        vol = _f(_g(row, "realized_vol_20d", default=0))
+        mcp = _f(_g(row, "market_cap_percentile", "market_cap", default=0.5))
 
         # Direction bias: use pre-computed from gold table if available (includes simulation feedback)
-        buy_pct = row.get("buy_pct")
+        buy_pct = _g(row, "buy_pct")
         if buy_pct is not None:
             buy_bias = _f(buy_pct, 0.30)
-            call_bias = _f(row.get("call_pct"), 0.25)
-            put_bias = _f(row.get("put_pct"), 0.25)
-            short_bias = _f(row.get("short_pct"), 0.20)
+            call_bias = _f(_g(row, "call_pct"), 0.25)
+            put_bias = _f(_g(row, "put_pct"), 0.25)
+            short_bias = _f(_g(row, "short_pct"), 0.20)
         else:
             # Fallback: derive from RSI/drawdown
-            rsi = _f(row.get("rsi_14"), 50)
+            rsi = _f(_g(row, "rsi_14", default=50))
             buy_bias = 0.35 if rsi > 50 else 0.2
             short_bias = 0.15 if rsi > 50 else 0.3
             call_bias = 0.3 if dd < -0.1 else 0.25
             put_bias = max(1.0 - buy_bias - short_bias - call_bias, 0.05)
 
         # Store dimensions: use pre-computed if available
-        sw = row.get("store_width")
+        sw = _g(row, "store_width")
         if sw is not None:
             s_width = _f(sw, 1.5)
-            s_height = _f(row.get("store_height"), 2.0)
-            s_depth = _f(row.get("store_depth"), 1.0)
-            s_glow = _f(row.get("store_glow"), 0.0)
+            s_height = _f(_g(row, "store_height"), 2.0)
+            s_depth = _f(_g(row, "store_depth"), 1.0)
+            s_glow = _f(_g(row, "store_glow"), 0.0)
         else:
             s_width = round(1.0 + mcp * 2.0, 2)
             s_height = round(1.5 + mcp * 2.5, 2)
@@ -157,22 +144,22 @@ def _build_payload() -> dict:
             s_glow = round(gs / 5.0, 2)
 
         # Agent density: use pre-computed if available
-        ad = row.get("agent_density")
+        ad = _g(row, "agent_density")
         agent_dens = int(_f(ad)) if ad is not None else max(50, int(200 + gs * 100))
 
-        sm = row.get("speed_multiplier")
+        sm = _g(row, "speed_multiplier")
         spd_mult = _f(sm, 1.0) if sm is not None else round(1.0 + gs * 0.3, 2)
 
         # Forward return distribution: use pre-computed percentiles if available
-        fwd_p5 = row.get("fwd_p5")
+        fwd_p5 = _g(row, "fwd_60d_p5", "fwd_p5")
         if fwd_p5 is not None:
             frd = {
                 "p5": round(_f(fwd_p5), 4),
-                "p25": round(_f(row.get("fwd_p25")), 4),
-                "median": round(_f(row.get("fwd_median")), 4),
-                "p75": round(_f(row.get("fwd_p75")), 4),
-                "p95": round(_f(row.get("fwd_p95")), 4),
-                "skew": round(_f(row.get("fwd_skew")), 4),
+                "p25": round(_f(_g(row, "fwd_60d_p25", "fwd_p25")), 4),
+                "median": round(_f(_g(row, "fwd_60d_median", "fwd_median")), 4),
+                "p75": round(_f(_g(row, "fwd_60d_p75", "fwd_p75")), 4),
+                "p95": round(_f(_g(row, "fwd_60d_p95", "fwd_p95")), 4),
+                "skew": round(_f(_g(row, "fwd_60d_skew", "fwd_skew")), 4),
             }
         else:
             frd = {
@@ -184,8 +171,12 @@ def _build_payload() -> dict:
                 "skew": round(_f(row.get("fwd_skew")), 4),
             }
 
+        ticker = row.get("ticker")
+        if not ticker:
+            continue  # skip rows without a ticker
+
         stocks.append({
-            "ticker": row["ticker"],
+            "ticker": ticker,
             "sector": row.get("sector") or "Unknown",
             "close": _f(row.get("close")),
             "daily_return": round(_f(row.get("daily_return")), 6),
@@ -195,11 +186,11 @@ def _build_payload() -> dict:
             "market_cap_rank": round(mcp, 4),
             "golden_score": gs,
             "ticket_levels": {
-                "dip_ticket": _b(row.get("t1_dip")),
-                "shock_ticket": _b(row.get("t2_shock")),
-                "asymmetry_ticket": _b(row.get("t3_asymmetry")),
-                "dislocation_ticket": _b(row.get("t4_dislocation")),
-                "convexity_ticket": _b(row.get("t5_convexity")),
+                "dip_ticket": _b(_g(row, "ticket_1_dip", "dip_ticket", default=False)),
+                "shock_ticket": _b(_g(row, "ticket_2_shock", "shock_ticket", default=False)),
+                "asymmetry_ticket": _b(_g(row, "ticket_3_asymmetry", "asymmetry_ticket", default=False)),
+                "dislocation_ticket": _b(_g(row, "ticket_4_dislocation", "dislocation_ticket", default=False)),
+                "convexity_ticket": _b(_g(row, "ticket_5_convexity", "convexity_ticket", default=False)),
             },
             "is_platinum": _b(row.get("is_platinum")),
             "rarity_percentile": round(_f(row.get("rarity_percentile"), 0.5), 4),
@@ -253,6 +244,7 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(payload).encode())
         except Exception as e:
+            import traceback
             self.send_response(500)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -261,4 +253,5 @@ class handler(BaseHTTPRequestHandler):
                 "stocks": [],
                 "source": "error",
                 "error": str(e)[:200],
+                "trace": traceback.format_exc()[-500:],
             }).encode())
