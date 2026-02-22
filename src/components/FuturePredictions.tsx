@@ -1,5 +1,5 @@
 // ============================================================
-// SweetReturns — Future Predictions (URL + text, Gemini analysis)
+// SweetReturns — Future Predictions (Gemini-powered, no backend needed)
 // ============================================================
 
 import { useState, useCallback, useMemo } from 'react';
@@ -8,19 +8,53 @@ const ACCENT = '#FF69B4';
 const PANEL_BG = 'rgba(15, 15, 35, 0.92)';
 const BORDER = 'rgba(255,255,255,0.08)';
 
-// Auto-detect backend URL: use env var if set, otherwise derive from current hostname
-const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 
 interface PredictionResult {
   sentiment: string;
   score: number;
-  affected_tickers?: string[];
-  analysis?: string;
-  trade_suggestion?: string;
-  message?: string;
+  affected_tickers: string[];
+  analysis: string;
+  trade_suggestion: string;
 }
 
 const URL_REGEX = /^https?:\/\//i;
+
+async function callGemini(prompt: string): Promise<PredictionResult> {
+  const res = await fetch(GEMINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.5, maxOutputTokens: 1024 },
+    }),
+  });
+
+  if (!res.ok) throw new Error(`Gemini API returned ${res.status}`);
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  return JSON.parse(cleaned);
+}
+
+function buildPrompt(input: string, isUrl: boolean): string {
+  const context = isUrl
+    ? `Analyze this financial news URL and predict market impact: ${input}`
+    : `Analyze this market scenario and predict impact: "${input}"`;
+
+  return `You are a senior financial analyst. ${context}
+
+Respond ONLY with valid JSON (no markdown, no code fences):
+{
+  "sentiment": "bullish" or "bearish" or "neutral",
+  "score": number between -1.0 and 1.0,
+  "affected_tickers": ["AAPL", "MSFT", ...up to 5 most affected stock tickers],
+  "analysis": "2-3 sentence market analysis",
+  "trade_suggestion": "1-2 sentence actionable trade idea"
+}`;
+}
 
 function FuturePredictions() {
   const [isOpen, setIsOpen] = useState(true);
@@ -30,50 +64,34 @@ function FuturePredictions() {
   const [error, setError] = useState<string | null>(null);
 
   const isUrl = useMemo(() => URL_REGEX.test(input.trim()), [input]);
+  const hasKey = Boolean(API_KEY);
 
   const handlePredict = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed) return;
 
+    if (!hasKey) {
+      setError('Set VITE_GEMINI_API_KEY in your .env file to enable predictions');
+      return;
+    }
+
     setIsLoading(true);
     setResult(null);
     setError(null);
 
-    const body = URL_REGEX.test(trimmed)
-      ? { news_url: trimmed }
-      : { news_text: trimmed };
-
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-
-      const response = await fetch(`${API_URL}/inject-news`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
-      }
-
-      const data: PredictionResult = await response.json();
-      setResult(data);
+      const prediction = await callGemini(buildPrompt(trimmed, isUrl));
+      setResult(prediction);
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        setError('Backend not reachable — start the server with: cd backend && uvicorn app.main:app');
-      } else if (err instanceof TypeError && (err.message.includes('fetch') || err.message.includes('network'))) {
-        setError('Cannot connect to backend — ensure the API server is running on port 8000');
+      if (err instanceof SyntaxError) {
+        setError('Gemini returned an invalid response — try rephrasing');
       } else {
         setError(err instanceof Error ? err.message : 'Prediction failed');
       }
     } finally {
       setIsLoading(false);
     }
-  }, [input]);
+  }, [input, isUrl, hasKey]);
 
   const getSentimentColor = (sentiment: string): string => {
     switch (sentiment.toLowerCase()) {
@@ -135,7 +153,7 @@ function FuturePredictions() {
       <div style={{ padding: '10px 12px' }}>
         {/* Mode indicator */}
         <div style={{ fontSize: 8, color: isUrl ? '#00BFFF' : '#666', marginBottom: 4, transition: 'color 0.15s' }}>
-          {isUrl ? 'URL detected — Gemini will analyze the article' : 'Paste a news URL or describe a market scenario'}
+          {!hasKey ? 'VITE_GEMINI_API_KEY required' : isUrl ? 'URL detected — Gemini will analyze the article' : 'Paste a news URL or describe a market scenario'}
         </div>
 
         <textarea
@@ -236,13 +254,6 @@ function FuturePredictions() {
                     </span>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Engine */}
-            {result.message && (
-              <div style={{ color: '#555', fontSize: 7, fontStyle: 'italic', marginTop: 4 }}>
-                {result.message}
               </div>
             )}
           </div>
