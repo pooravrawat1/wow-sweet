@@ -45,6 +45,8 @@ def _check_databricks() -> dict:
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         db = _check_databricks()
+        # Debug: check which DATABRICKS_ env vars are set
+        db_env_keys = [k for k in os.environ if k.startswith("DATABRICKS")]
         result = {
             "status": "healthy",
             "service": "sweetreturns-api",
@@ -52,6 +54,9 @@ class handler(BaseHTTPRequestHandler):
             "databricks_configured": db["configured"],
             "databricks_status": db["status"],
             "stocks_available": db["connected"],
+            "debug_env_keys": db_env_keys,
+            "debug_host_present": "DATABRICKS_HOST" in os.environ,
+            "debug_host_len": len(os.environ.get("DATABRICKS_HOST", "")),
         }
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
