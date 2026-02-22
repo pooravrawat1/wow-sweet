@@ -1,7 +1,8 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import { generateStockData, getCorrelationEdges, loadPipelineData, modulateStocksByTime } from './data/stockData';
+import { initTrackedAgents, processDay, getLeaderboard } from './services/tradeTracker';
 import { CandyCane, ChartLine, LightningBolt, WebNodes, Gumball, NoteBook, Lollipop, ChocolateBar } from './components/CandyIcons';
 import type { PageName } from './types';
 
@@ -134,62 +135,29 @@ export default function App() {
       setStocks(stocks);
       setBaseStocks(stocks);
       setCorrelationEdges(edges);
-      // Generate realistic leaderboard with trade details
-      const agentNames = [
-        'CandyTrader', 'SugarRush', 'GummyBear', 'ChocolateChip', 'LollipopKing',
-        'MintCondition', 'CaramelQueen', 'ToffeeHammer', 'JellyRoller', 'FudgeMaster',
-        'TaffyPuller', 'BonbonBoss', 'NougatNinja', 'TruffleHunter', 'PralineKnight',
-        'SorbetSniper', 'WaferWolf', 'MarzibanMage', 'LicoriceViper', 'DropKicker',
-      ];
-      const actions: Array<'BUY' | 'CALL' | 'PUT' | 'SHORT'> = ['BUY', 'CALL', 'PUT', 'SHORT'];
-      const reasons = [
-        'Deep drawdown reversal signal (DD -18%, RSI oversold)',
-        'Golden ticket dip + positive forward skew detected',
-        'Volume spike + mean reversion setup (z-score -2.1)',
-        'Sector rotation into oversold territory',
-        'Momentum breakout above BB upper band',
-        'Convexity play: asymmetric risk/reward profile',
-        'SPY underperformance + favorable vol regime',
-        'MACD crossover with bullish divergence',
-        'Fortune cookie signal: limited downside, high upside potential',
-        'Shock absorption: post-jawbreaker recovery pattern',
-      ];
-      const leaders = Array.from({ length: 20 }, (_, i) => {
-        const profit = Math.floor(85000 - i * 3800 + Math.random() * 2000);
-        const numTrades = 5 + Math.floor(Math.random() * 15);
-        const wins = Math.floor(numTrades * (0.55 + Math.random() * 0.35));
-        const tradeTickers = stocks.slice(0, 50).sort(() => Math.random() - 0.5).slice(0, numTrades);
-        const trades = tradeTickers.map((s, ti) => ({
-          ticker: s.ticker,
-          action: actions[Math.floor(Math.random() * actions.length)],
-          profit: Math.floor((ti < wins ? 1 : -1) * (500 + Math.random() * 8000)),
-          entryDate: `2023-${String(6 + Math.floor(ti / 4)).padStart(2, '0')}-${String(1 + (ti * 3) % 28).padStart(2, '0')}`,
-          reasoning: reasons[Math.floor(Math.random() * reasons.length)],
-        }));
-        const currentStock = stocks[Math.floor(Math.random() * Math.min(stocks.length, 30))];
-        return {
-          id: `agent_${1000 + i}`,
-          name: agentNames[i % agentNames.length] + (i >= agentNames.length ? `_${i}` : ''),
-          profit,
-          rank: i + 1,
-          trades,
-          currentAction: actions[Math.floor(Math.random() * actions.length)],
-          currentTicker: currentStock?.ticker || 'AAPL',
-          winRate: wins / numTrades,
-          totalTrades: numTrades,
-        };
-      });
-      setAgentLeaderboard(leaders);
+      // Initialize trade tracker with live agents
+      initTrackedAgents(stocks);
+      setAgentLeaderboard(getLeaderboard());
     }
     init();
   }, [setStocks, setBaseStocks, setCorrelationEdges, setAgentLeaderboard]);
+
+  // Track the last processed date for trade simulation
+  const lastProcessedDate = useRef<string>('');
 
   // Time modulation: update biases when date/mode changes (without re-initializing simulation)
   useEffect(() => {
     if (baseStocks.length === 0) return;
     const modulated = modulateStocksByTime(baseStocks, timeSlider.currentDate, timeSlider.mode);
     setModulatedBiases(modulated.map((s) => s.direction_bias));
-  }, [baseStocks, timeSlider.currentDate, timeSlider.mode, setModulatedBiases]);
+
+    // Process trades when date changes
+    if (timeSlider.currentDate !== lastProcessedDate.current) {
+      lastProcessedDate.current = timeSlider.currentDate;
+      processDay(timeSlider.currentDate, modulated);
+      setAgentLeaderboard(getLeaderboard());
+    }
+  }, [baseStocks, timeSlider.currentDate, timeSlider.mode, setModulatedBiases, setAgentLeaderboard]);
 
   return (
     <BrowserRouter>

@@ -6,7 +6,7 @@
 import type { StockData, SectorInfo, DirectionBias, GraphEdge } from '../types';
 
 // --- Deterministic seeded random ---
-function seededRandom(seed: number): () => number {
+export function seededRandom(seed: number): () => number {
   let s = seed;
   return () => {
     s = (s * 16807 + 0) % 2147483647;
@@ -14,7 +14,7 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-function hashStr(str: string): number {
+export function hashStr(str: string): number {
   let hash = 5381;
   for (let i = 0; i < str.length; i++) {
     hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;

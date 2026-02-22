@@ -111,6 +111,7 @@ export const TimeSlider: React.FC = () => {
 
   return (
     <div style={containerStyle}>
+      <style>{`@keyframes tsLivePulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }`}</style>
       {/* Top row: mode buttons | date display | date picker | playback | speed */}
       <div style={topRowStyle}>
         {/* Mode toggle buttons */}
@@ -180,6 +181,20 @@ export const TimeSlider: React.FC = () => {
           >
             {timeSlider.isPlaying ? '\u275A\u275A' : '\u25B6'}
           </button>
+          {timeSlider.isPlaying && (
+            <span style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: '#fff',
+              background: '#FF4444',
+              padding: '1px 6px',
+              borderRadius: 3,
+              letterSpacing: 0.8,
+              animation: 'tsLivePulse 1.2s ease-in-out infinite',
+            }}>
+              LIVE
+            </span>
+          )}
           <button style={ctrlBtnStyle} onClick={() => stepDate(1)} title="Forward 1 day">
             &rsaquo;
           </button>

@@ -277,6 +277,12 @@ export const AgentLeaderboard: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const leaderboard = useStore((s) => s.agentLeaderboard);
   const top5 = useMemo(() => leaderboard.slice(0, 5), [leaderboard]);
+  const isPlaying = useStore((s) => s.timeSlider.isPlaying);
+  const currentDate = useStore((s) => s.timeSlider.currentDate);
+  const simDate = useMemo(() => {
+    const d = new Date(currentDate);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }, [currentDate]);
 
   // ---- drag state ----
   const panelRef = useRef<HTMLDivElement>(null);
@@ -345,6 +351,7 @@ export const AgentLeaderboard: React.FC = () => {
         touchAction: 'none',
       }}
     >
+      <style>{`@keyframes lbLivePulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }`}</style>
       {/* Draggable header */}
       <div
         onPointerDown={onPointerDown}
@@ -365,6 +372,22 @@ export const AgentLeaderboard: React.FC = () => {
         <span style={{ fontSize: 14, flexShrink: 0 }}><GoldenStar size={14} /></span>
         <span style={{ fontSize: 12, fontWeight: 700, color: ACCENT, letterSpacing: 0.8, flex: 1 }}>
           Top 5 Agents
+          {isPlaying && (
+            <span style={{
+              display: 'inline-block',
+              width: 6, height: 6,
+              borderRadius: '50%',
+              background: '#00FF7F',
+              marginLeft: 6,
+              verticalAlign: 'middle',
+              animation: 'lbLivePulse 1s ease-in-out infinite',
+            }} />
+          )}
+          {simDate && (
+            <span style={{ fontSize: 9, color: '#888', fontWeight: 400, marginLeft: 6 }}>
+              {simDate}
+            </span>
+          )}
         </span>
         <button
           data-no-drag
