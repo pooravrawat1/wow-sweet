@@ -6,6 +6,14 @@
   <img src="assets/wolf-of-wall-sweet-final.png" alt="Wolf of Wall Sweet" width="600" />
 </p>
 
+**Built at Hacklytics 2026 by:**
+- **Ibe Mohammed Ali** — Data/ML Engineer — Georgia State University
+- **Ryan Varghese** — Backend Engineer — Georgia Tech
+- **Poorav Rawat** — UX/UI & Web Dev — Georgia State University
+- **Kashish Rikhi** — ML Engineer — Georgia State University
+
+**Live:** [wolfofwallsweet.tech](https://wolfofwallsweet.tech)
+
 ---
 
 ## Overview
@@ -52,6 +60,7 @@
 - **Minimap** — Real-time 180x180 grid overview of agent positions across the city
 - **Market Regime Detection** — Hidden Markov Model identifies Bull/Bear/Neutral regimes from SPY data
 - **FinBERT Sentiment** — HuggingFace FinBERT model scores financial news headlines for agent reactions
+- **Live Databricks Connection** — 3-tier data loading: live Databricks queries → static JSON fallback → synthetic data, with real-time connection status badge
 - **Delta Lake Time Travel** — Version-controlled data ensures zero retroactive contamination
 - **WebSocket Streaming** — Real-time agent flow instructions and breaking news from FastAPI backend
 
@@ -99,22 +108,27 @@
                                     └───────────────┬──────────────────┘
                                                     │
 ┌─────────────┐    ┌────────────┐    ┌──────────────┴───────────────┐
-│ Kaggle CSV  │───>│ Databricks │───>│       FastAPI Backend         │
-│ (602K rows) │    │  Pipeline  │    │  /analyze/news                │
-│             │    │  Bronze →  │    │  /market/regime               │
-│             │    │  Silver →  │    │  /stocks/correlations         │
-│             │    │  Gold →    │    │  /ws/agent-stream (WebSocket) │
-│             │    │  Export    │    └──────────────┬───────────────-┘
-└─────────────┘    └─────┬──────┘                   │
+│ Kaggle CSV  │───>│ Databricks │◄──>│       FastAPI Backend         │
+│ (602K rows) │    │  Pipeline  │    │  /stocks (live query, 5m TTL) │
+│             │    │  Bronze →  │    │  /analyze/news                │
+│             │    │  Silver →  │    │  /market/regime               │
+│             │    │  Gold →    │    │  /stocks/correlations         │
+│             │    │  Export    │    │  /ws/agent-stream (WebSocket) │
+└─────────────┘    └─────┬──────┘    └──────────────┬───────────────┘
                          │                          │
                          ▼                          ▼
                ┌─────────────────┐    ┌─────────────────────────────┐
-               │ frontend_       │───>│     React + Three.js App     │
+               │ frontend_       │    │     React + Three.js App     │
                │ payload.json    │    │                               │
-               │ (500 stocks +   │    │  ┌─────────┐  ┌───────────┐  │
-               │  correlation    │    │  │CandyCity│  │Leaderboard│  │
-               │  edges)         │    │  │ (3D)    │  │  (Live)   │  │
-               └─────────────────┘    │  └────┬────┘  └───────────┘  │
+               │ (static         │    │  3-Tier Data Loading:         │
+               │  fallback)      │    │  1. Live Databricks (via API) │
+               └────────┬────────┘    │  2. Static JSON (fallback)    │
+                        │             │  3. Synthetic (mock)           │
+                        └────────────>│                               │
+                                      │  ┌─────────┐  ┌───────────┐  │
+                                      │  │CandyCity│  │Leaderboard│  │
+                                      │  │ (3D)    │  │  (Live)   │  │
+                                      │  └────┬────┘  └───────────┘  │
                                       │       │                       │
                                       │  ┌────┴──────────────────┐   │
                                       │  │  Crowd Simulation     │   │
@@ -133,12 +147,17 @@
 
 ```
 App.tsx init()
-  ├── loadPipelineData() → fetch /frontend_payload.json from Databricks export
-  │   └── fallback: generateStockData() → 500 synthetic stocks
+  ├── loadStockData() → 3-tier fallback:
+  │   ├── Tier 1: apiClient.fetchStocks() → live Databricks query via backend
+  │   ├── Tier 2: fetch /frontend_payload.json → static export fallback
+  │   └── Tier 3: generateStockData() → 500 synthetic stocks
   ├── setStocks(stocks), setBaseStocks(baseStocks)
   ├── setCorrelationEdges(edges)
+  ├── setDataSource('databricks' | 'static' | 'synthetic')
   ├── initTrackedAgents(stocks) → 24 agents with $0 P&L
-  └── setAgentLeaderboard(getLeaderboard())
+  ├── setAgentLeaderboard(getLeaderboard())
+  └── apiClient.startHealthCheck() → poll /health every 30s
+      └── ConnectionStatusBadge updates: LIVE | API | STATIC | MOCK
 ```
 
 ### Per-Frame Update Loop
@@ -244,10 +263,11 @@ Kaggle CSV (602K rows)
                                  │
                                  ▼
 ┌────────────────────────────────────────────────────────────────┐
-│ EXPORT                                                         │
+│ EXPORT + LIVE SERVING                                          │
 │                                                                │
 │  export_json.py → frontend_payload.json (500 stocks + edges)   │
 │  cli_pipeline.py → CLI orchestrator for full pipeline          │
+│  FastAPI /stocks → live query gold.golden_tickets (5-min cache)│
 └────────────────────────────────────────────────────────────────┘
 ```
 
@@ -470,7 +490,8 @@ Two validation notebooks prove zero lookahead bias across the entire pipeline:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/health` | Health check + Databricks connection status |
+| `GET` | `/health` | Health check + Databricks status + `stocks_available` flag |
+| `GET` | `/stocks` | **Live stock payload** from Databricks gold layer (5-min cache), falls back to static JSON |
 | `POST` | `/analyze/news` | Gemini + FinBERT sentiment analysis on news text/URL |
 | `GET` | `/market/regime` | Current market regime from HMM (Bull/Bear/Neutral) |
 | `GET` | `/stocks/correlations` | GNN correlation network edges |
@@ -482,8 +503,17 @@ Two validation notebooks prove zero lookahead bias across the entire pipeline:
 
 - REST API (SQL Statement endpoint) — avoids connection hangs from SQL connector
 - 35-second query timeout, auto-reconnect
+- `get_stock_payload()` — queries `sweetreturns.gold.golden_tickets` for latest date snapshot, 5-minute cache TTL
 - Caches regime, archetype, and network data
 - Falls back to keyword heuristics if Databricks unavailable
+
+### API Client (`src/services/apiClient.ts`)
+
+Frontend singleton that manages the backend connection lifecycle:
+- Auto-detects backend URL from `VITE_API_URL` or `http://{hostname}:8000`
+- Polls `/health` every 30s to track connection status
+- Status states: `connected` (Databricks live) → `fallback` (backend only) → `disconnected`
+- `ConnectionStatusBadge` in navbar shows real-time status: **LIVE** (green) / **API** (gold) / **STATIC** (orange) / **MOCK** (red)
 
 ---
 
@@ -566,6 +596,7 @@ wow-street/
 │   │   └── AgentReactionsPage.tsx # Real-time sentiment dashboard
 │   │
 │   ├── services/                  # AI & trading services
+│   │   ├── apiClient.ts           # Backend API client — health checks, live stock fetching
 │   │   ├── geminiService.ts       # 3-layer Gemini multi-agent (analysts → PM → risk)
 │   │   ├── whaleArena.ts          # 4 whale fund strategies (Wonka/Slugworth/Oompa/Gobstopper)
 │   │   ├── tradeTracker.ts        # Live P&L simulation for 24 agents
@@ -673,13 +704,15 @@ DATABRICKS_SQL_WAREHOUSE_PATH=/sql/1.0/warehouses/your-warehouse-id
 GEMINI_API_KEY=your-gemini-api-key
 ```
 
-### Run Backend
+### Run Backend (for live Databricks data)
 
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
+
+The frontend auto-detects the backend. With the backend running and Databricks credentials configured, the navbar badge shows **LIVE** (green). Without the backend, it falls back to static JSON or synthetic data automatically.
 
 ### Run Databricks Pipeline
 
