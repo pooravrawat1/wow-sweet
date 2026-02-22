@@ -29,10 +29,14 @@ function formatDisplayDate(s: string): string {
   });
 }
 
-const modeColors: Record<string, string> = {
-  historical: '#9370DB',
-  present: '#00FF7F',
-  future: '#FF69B4',
+const FONT = `'Leckerli One', cursive`;
+const ACCENT = '#6a00aa';
+const GOLD = '#FFD700';
+
+const modeColors: Record<string, { bg: string; text: string; border: string }> = {
+  historical: { bg: '#6a00aa',   text: '#fff',    border: '#6a00aa' },
+  present:    { bg: '#1a7a00',   text: '#fff',    border: '#1a7a00' },
+  future:     { bg: GOLD,        text: '#3d0066', border: '#c8a800' },
 };
 
 const speedOptions = [1, 5, 10];
@@ -111,30 +115,88 @@ export const TimeSlider: React.FC = () => {
 
   return (
     <div style={containerStyle}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Leckerli+One&display=swap');
+        .sweet-range::-webkit-slider-thumb {
+          -webkit-appearance: none; appearance: none;
+          width: 14px; height: 14px; border-radius: 50%;
+          background: ${ACCENT}; border: 2px solid #fff;
+          box-shadow: 0 0 6px ${ACCENT}88; cursor: pointer;
+        }
+        .sweet-range::-moz-range-thumb {
+          width: 14px; height: 14px; border-radius: 50%;
+          background: ${ACCENT}; border: 2px solid #fff;
+          box-shadow: 0 0 6px ${ACCENT}88; cursor: pointer;
+        }
+        .ts-ctrl:hover { background: #f0c000 !important; }
+        @keyframes tsShimmer {
+          0%   { transform: translateX(-120%); }
+          100% { transform: translateX(300%); }
+        }
+        .ts-shimmer-1x  { animation: tsShimmer 1.8s linear infinite; }
+        .ts-shimmer-5x  { animation: tsShimmer 0.5s linear infinite; }
+        .ts-shimmer-10x { animation: tsShimmer 0.22s linear infinite; }
+      `}</style>
+
+      {/* Animated time progression bar — above controls */}
+      <div style={{
+        width: '100%',
+        maxWidth: 'min(720px, 90vw)' as any,
+        height: 14,
+        borderRadius: 7,
+        background: '#d4a800',
+        border: '2px solid #b38f00',
+        overflow: 'hidden',
+        position: 'relative',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${pct}%`,
+          borderRadius: 7,
+          background: '#FFD700',
+          transition: `width ${timeSlider.isPlaying ? (1000 / timeSlider.playbackSpeed) : 400}ms linear`,
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 0 10px #FFD700',
+        }}>
+          <div className={timeSlider.isPlaying ? `ts-shimmer ts-shimmer-${timeSlider.playbackSpeed}x` : ''} style={{
+            position: 'absolute',
+            top: 0, left: 0, bottom: 0,
+            width: '40%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
+            borderRadius: 7,
+          }} />
+        </div>
+      </div>
+
       {/* Top row: mode buttons | date display | date picker | playback | speed */}
       <div style={topRowStyle}>
         {/* Mode toggle buttons */}
         <div style={btnGroupStyle}>
-          {modes.map((mode) => (
-            <button
-              key={mode}
-              onClick={() => handleModeClick(mode)}
-              style={{
-                ...modeBtnStyle,
-                backgroundColor:
-                  timeSlider.mode === mode ? modeColors[mode] : 'rgba(255,255,255,0.06)',
-                color: timeSlider.mode === mode ? '#1a1a2e' : '#888',
-                borderColor:
-                  timeSlider.mode === mode ? modeColors[mode] : 'rgba(255,255,255,0.15)',
-              }}
-            >
-              {mode}
-            </button>
-          ))}
+          {modes.map((mode) => {
+            const active = timeSlider.mode === mode;
+            const mc = modeColors[mode];
+            return (
+              <button
+                key={mode}
+                onClick={() => handleModeClick(mode)}
+                style={{
+                  ...modeBtnStyle,
+                  backgroundColor: active ? mc.bg : GOLD,
+                  color: active ? mc.text : '#3d0066',
+                  border: `1.5px solid ${active ? mc.border : '#c8a800'}`,
+                  boxShadow: active ? `0 2px 8px ${mc.bg}55` : 'none',
+                }}
+              >
+                {mode.charAt(0).toUpperCase() + mode.slice(1)}
+              </button>
+            );
+          })}
         </div>
 
         {/* Separator */}
-        <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.15)' }} />
+        <div style={{ width: 1, height: 18, background: 'rgba(106,0,170,0.18)' }} />
 
         {/* Date display + picker */}
         <div style={dateDisplayStyle}>{formatDisplayDate(timeSlider.currentDate)}</div>
@@ -157,53 +219,54 @@ export const TimeSlider: React.FC = () => {
         />
 
         {/* Separator */}
-        <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.15)' }} />
+        <div style={{ width: 1, height: 18, background: 'rgba(106,0,170,0.18)' }} />
 
         {/* Playback buttons */}
         <div style={btnGroupStyle}>
-          <button style={ctrlBtnStyle} onClick={jumpStart} title="Jump to start">
-            |&laquo;
-          </button>
-          <button style={ctrlBtnStyle} onClick={() => stepDate(-1)} title="Back 1 day">
-            &lsaquo;
-          </button>
+          <button className="ts-ctrl" style={ctrlBtnStyle} onClick={jumpStart} title="Jump to start">|«</button>
+          <button className="ts-ctrl" style={ctrlBtnStyle} onClick={() => stepDate(-1)} title="Back 1 day">‹</button>
           <button
+            className="ts-ctrl"
             style={{
               ...ctrlBtnStyle,
-              backgroundColor: timeSlider.isPlaying ? '#FF69B4' : 'rgba(255,255,255,0.12)',
-              color: timeSlider.isPlaying ? '#1a1a2e' : '#FF69B4',
+              backgroundColor: timeSlider.isPlaying ? ACCENT : GOLD,
+              color: timeSlider.isPlaying ? '#fff' : '#3d0066',
+              border: `1.5px solid ${timeSlider.isPlaying ? ACCENT : '#c8a800'}`,
               fontWeight: 700,
               minWidth: 44,
+              boxShadow: `0 2px 8px ${timeSlider.isPlaying ? ACCENT + '55' : GOLD + '55'}`,
             }}
             onClick={() => setPlayback(!timeSlider.isPlaying)}
             title={timeSlider.isPlaying ? 'Pause' : 'Play'}
           >
-            {timeSlider.isPlaying ? '\u275A\u275A' : '\u25B6'}
+            {timeSlider.isPlaying ? '❚❚' : '▶'}
           </button>
-          <button style={ctrlBtnStyle} onClick={() => stepDate(1)} title="Forward 1 day">
-            &rsaquo;
-          </button>
-          <button style={ctrlBtnStyle} onClick={jumpEnd} title="Jump to end">
-            &raquo;|
-          </button>
+          <button className="ts-ctrl" style={ctrlBtnStyle} onClick={() => stepDate(1)} title="Forward 1 day">›</button>
+          <button className="ts-ctrl" style={ctrlBtnStyle} onClick={jumpEnd} title="Jump to end">»|</button>
         </div>
 
         {/* Speed selector */}
         <div style={btnGroupStyle}>
-          {speedOptions.map((spd) => (
-            <button
-              key={spd}
-              style={{
-                ...speedBtnStyle,
-                backgroundColor:
-                  timeSlider.playbackSpeed === spd ? '#FFD700' : 'rgba(255,255,255,0.08)',
-                color: timeSlider.playbackSpeed === spd ? '#1a1a2e' : '#aaa',
-              }}
-              onClick={() => setPlaybackSpeed(spd)}
-            >
-              {spd}x
-            </button>
-          ))}
+          {speedOptions.map((spd) => {
+            const active = timeSlider.playbackSpeed === spd;
+            return (
+              <button
+                key={spd}
+                style={{
+                  ...speedBtnStyle,
+                  backgroundColor: active ? GOLD : GOLD,
+                  color: '#3d0066',
+                  border: `1.5px solid ${active ? '#c8a800' : '#c8a800'}`,
+                  boxShadow: active ? `0 2px 6px ${GOLD}55` : 'none',
+                  fontWeight: active ? 800 : 600,
+                  opacity: active ? 1 : 0.65,
+                }}
+                onClick={() => setPlaybackSpeed(spd)}
+              >
+                {spd}×
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -224,6 +287,7 @@ export const TimeSlider: React.FC = () => {
             step={86_400_000}
             value={currentTs}
             onChange={onSliderChange}
+            className="sweet-range"
             style={rangeInputStyle}
           />
         </div>
@@ -242,20 +306,21 @@ const containerStyle: React.CSSProperties = {
   width: '100%',
   height: 'auto',
   minHeight: 56,
-  maxHeight: 96,
-  background: 'rgba(26, 26, 46, 0.92)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  borderTop: '1px solid rgba(255, 105, 180, 0.25)',
+  maxHeight: 110,
+  background: 'rgba(255,255,255,0.88)',
+  backdropFilter: 'blur(10px)',
+  WebkitBackdropFilter: 'blur(10px)',
+  borderTop: '1.5px solid rgba(106,0,170,0.18)',
+  boxShadow: '0 -2px 16px rgba(106,0,170,0.08)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: 4,
+  gap: 5,
   zIndex: 1000,
-  padding: '6px 20px',
+  padding: '7px 20px',
   boxSizing: 'border-box',
-  fontFamily: "'Inter', 'Segoe UI', sans-serif",
+  fontFamily: FONT,
   overflow: 'visible',
 };
 
@@ -268,37 +333,39 @@ const topRowStyle: React.CSSProperties = {
 };
 
 const modeBtnStyle: React.CSSProperties = {
-  border: '1px solid',
-  borderRadius: 4,
-  fontSize: 10,
-  padding: '2px 8px',
+  borderRadius: 6,
+  fontSize: 11,
+  padding: '3px 11px',
   cursor: 'pointer',
   fontWeight: 600,
-  textTransform: 'capitalize',
-  letterSpacing: 0.5,
+  fontFamily: FONT,
+  letterSpacing: 0.3,
   transition: 'all 0.15s',
-  background: 'transparent',
 };
 
 const dateDisplayStyle: React.CSSProperties = {
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: 600,
-  color: '#FF69B4',
-  letterSpacing: 0.5,
+  fontFamily: FONT,
+  color: '#3d0066',
+  letterSpacing: 0.3,
   whiteSpace: 'nowrap',
-  textShadow: '0 0 8px rgba(255,105,180,0.4)',
+  background: GOLD,
+  border: '1.5px solid #c8a800',
+  borderRadius: 6,
+  padding: '2px 10px',
 };
 
 const dateInputStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.08)',
-  border: '1px solid rgba(255,105,180,0.3)',
-  borderRadius: 4,
-  color: '#FF69B4',
-  fontSize: 10,
-  padding: '2px 6px',
+  background: GOLD,
+  border: '1.5px solid #c8a800',
+  borderRadius: 6,
+  color: '#3d0066',
+  fontSize: 11,
+  padding: '2px 7px',
   cursor: 'pointer',
-  fontFamily: "'Leckerli One', cursive",
-  colorScheme: 'dark',
+  fontFamily: FONT,
+  colorScheme: 'light',
 };
 
 const sliderRowStyle: React.CSSProperties = {
@@ -311,7 +378,8 @@ const sliderRowStyle: React.CSSProperties = {
 
 const yearLabelStyle: React.CSSProperties = {
   fontSize: 10,
-  color: '#aaa',
+  color: 'rgba(106,0,170,0.45)',
+  fontFamily: FONT,
   minWidth: 30,
   textAlign: 'center',
 };
@@ -331,7 +399,7 @@ const trackFillStyle: React.CSSProperties = {
   transform: 'translateY(-50%)',
   height: 4,
   borderRadius: 2,
-  background: 'linear-gradient(90deg, #9370DB, #00FF7F, #FF69B4)',
+  background: `linear-gradient(90deg, ${ACCENT}, ${GOLD})`,
   pointerEvents: 'none',
 };
 
@@ -340,7 +408,7 @@ const rangeInputStyle: React.CSSProperties = {
   height: 4,
   appearance: 'none',
   WebkitAppearance: 'none',
-  background: 'rgba(255,255,255,0.1)',
+  background: 'rgba(106,0,170,0.12)',
   borderRadius: 2,
   outline: 'none',
   cursor: 'pointer',
@@ -355,25 +423,27 @@ const btnGroupStyle: React.CSSProperties = {
 };
 
 const ctrlBtnStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.08)',
-  border: '1px solid rgba(255,105,180,0.3)',
-  borderRadius: 4,
-  color: '#FF69B4',
+  background: GOLD,
+  border: '1.5px solid #c8a800',
+  borderRadius: 6,
+  color: '#3d0066',
   fontSize: 13,
-  padding: '2px 8px',
+  padding: '2px 9px',
   cursor: 'pointer',
+  fontFamily: FONT,
   lineHeight: 1.4,
   transition: 'background 0.15s',
+  fontWeight: 600,
 };
 
 const speedBtnStyle: React.CSSProperties = {
-  border: '1px solid rgba(255,215,0,0.3)',
-  borderRadius: 4,
+  borderRadius: 6,
   fontSize: 11,
-  padding: '2px 8px',
+  padding: '3px 9px',
   cursor: 'pointer',
   fontWeight: 600,
-  transition: 'background 0.15s',
+  fontFamily: FONT,
+  transition: 'all 0.15s',
 };
 
 export default TimeSlider;
