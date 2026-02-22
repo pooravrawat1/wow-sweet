@@ -1,12 +1,16 @@
 // ============================================================
-// SweetReturns — Store Interior Overlay
-// Large overlay showing agent flow, trade lanes, and stats
+// SweetReturns — Store Interior Overlay (light candy theme)
 // ============================================================
 
 import React, { useMemo, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { SECTORS } from '../data/stockData';
 import type { StockData } from '../types';
+
+const FONT = `'Leckerli One', cursive`;
+const PURPLE = '#6a00aa';
+const GOLD = '#FFD700';
+const GOLD_DARK = '#c8a800';
 
 // ---- Sub-components ----
 
@@ -17,11 +21,11 @@ const StarRating: React.FC<{ score: number }> = ({ score }) => (
         key={i}
         style={{
           fontSize: 22,
-          color: i <= score ? '#FFD700' : 'rgba(255,255,255,0.15)',
-          textShadow: i <= score ? '0 0 8px rgba(255,215,0,0.5)' : 'none',
+          color: i <= score ? GOLD_DARK : 'rgba(0,0,0,0.12)',
+          textShadow: i <= score ? '0 0 6px rgba(200,168,0,0.4)' : 'none',
         }}
       >
-        {'\u2605'}
+        ★
       </span>
     ))}
   </div>
@@ -34,31 +38,32 @@ const TradeBar: React.FC<{
   color: string;
   maxPct: number;
 }> = ({ label, pct, agentCount, color, maxPct }) => {
-  const barHeight = maxPct > 0 ? (pct / maxPct) * 140 : 0;
+  const barHeight = maxPct > 0 ? (pct / maxPct) * 100 : 0;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 4 }}>
-      <span style={{ fontSize: 11, color: '#bbb', fontWeight: 600 }}>{(pct * 100).toFixed(0)}%</span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: 3, fontFamily: FONT }}>
+      <span style={{ fontSize: 10, color: PURPLE, fontWeight: 700 }}>{(pct * 100).toFixed(0)}%</span>
       <div style={{
-        width: 36,
-        height: 150,
-        background: 'rgba(255,255,255,0.04)',
+        width: 28,
+        height: 110,
+        background: 'rgba(106,0,170,0.07)',
         borderRadius: 6,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-end',
         overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1.5px solid rgba(106,0,170,0.15)',
       }}>
         <div style={{
           width: '100%',
           height: barHeight,
-          background: `linear-gradient(to top, ${color}, ${color}88)`,
+          background: `linear-gradient(to top, ${color}, ${color}cc)`,
           borderRadius: '0 0 5px 5px',
           transition: 'height 0.5s ease',
+          boxShadow: `0 0 6px ${color}88`,
         }} />
       </div>
-      <span style={{ fontSize: 12, color, fontWeight: 700 }}>{label}</span>
-      <span style={{ fontSize: 9, color: '#888' }}>{agentCount} agents</span>
+      <span style={{ fontSize: 11, color, fontWeight: 700, fontFamily: FONT }}>{label}</span>
+      <span style={{ fontSize: 8, color: '#888', fontFamily: FONT }}>{agentCount}</span>
     </div>
   );
 };
@@ -72,8 +77,9 @@ const DoorCrowdViz: React.FC<{ doorCount: number; insideCount: number }> = ({ do
       alignItems: 'center',
       gap: 8,
       padding: 12,
+      fontFamily: FONT,
     }}>
-      <div style={{ fontSize: 10, color: '#9370DB', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+      <div style={{ fontSize: 10, color: PURPLE, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
         Door
       </div>
       {/* Door icon */}
@@ -81,7 +87,7 @@ const DoorCrowdViz: React.FC<{ doorCount: number; insideCount: number }> = ({ do
         width: 30,
         height: 50,
         borderRadius: '4px 4px 0 0',
-        border: '2px solid #FFD700',
+        border: `2px solid ${GOLD_DARK}`,
         borderBottom: 'none',
         display: 'flex',
         alignItems: 'center',
@@ -92,7 +98,7 @@ const DoorCrowdViz: React.FC<{ doorCount: number; insideCount: number }> = ({ do
           width: 4,
           height: 4,
           borderRadius: '50%',
-          background: '#FFD700',
+          background: GOLD_DARK,
           position: 'absolute',
           right: 4,
           top: '50%',
@@ -113,16 +119,16 @@ const DoorCrowdViz: React.FC<{ doorCount: number; insideCount: number }> = ({ do
               width: 6,
               height: 6,
               borderRadius: '50%',
-              background: i % 2 === 0 ? '#2C3E50' : '#8E44AD',
+              background: i % 2 === 0 ? PURPLE : GOLD_DARK,
               animation: `pulse 0.5s ease-in-out ${(i * 0.05)}s infinite alternate`,
             }}
           />
         ))}
       </div>
-      <span style={{ fontSize: 10, color: '#FF69B4', fontWeight: 600 }}>
+      <span style={{ fontSize: 10, color: '#c0392b', fontWeight: 700 }}>
         {doorCount} fighting
       </span>
-      <span style={{ fontSize: 10, color: '#00FF7F' }}>
+      <span style={{ fontSize: 10, color: '#1a7a00', fontWeight: 700 }}>
         {insideCount} inside
       </span>
     </div>
@@ -146,7 +152,7 @@ const ReturnDistChart: React.FC<{ dist: StockData['forward_return_distribution']
         const isPos = bar.value >= 0;
         return (
           <div key={bar.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-            <span style={{ fontSize: 8, color: '#aaa', marginBottom: 2 }}>
+            <span style={{ fontSize: 8, color: '#555', marginBottom: 2, fontFamily: FONT }}>
               {(bar.value * 100).toFixed(1)}%
             </span>
             <div style={{
@@ -154,10 +160,11 @@ const ReturnDistChart: React.FC<{ dist: StockData['forward_return_distribution']
               maxWidth: 28,
               height: Math.max(h, 3),
               borderRadius: 2,
-              backgroundColor: isPos ? '#00FF7F' : '#FF4500',
-              opacity: 0.8,
+              backgroundColor: isPos ? GOLD : '#c0392b',
+              boxShadow: isPos ? `0 0 4px ${GOLD}88` : undefined,
+              opacity: 0.9,
             }} />
-            <span style={{ fontSize: 8, color: '#888', marginTop: 2 }}>{bar.label}</span>
+            <span style={{ fontSize: 8, color: '#777', marginTop: 2, fontFamily: FONT }}>{bar.label}</span>
           </div>
         );
       })}
@@ -166,14 +173,14 @@ const ReturnDistChart: React.FC<{ dist: StockData['forward_return_distribution']
 };
 
 const TicketRow: React.FC<{ label: string; candy: string; active: boolean }> = ({ label, candy, active }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
-    <span style={{ fontSize: 14, width: 20, textAlign: 'center' }}>
-      {active ? '\u2713' : '\u2717'}
+  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontFamily: FONT }}>
+    <span style={{ fontSize: 14, width: 20, textAlign: 'center', color: active ? GOLD_DARK : '#ccc' }}>
+      {active ? '✓' : '✗'}
     </span>
-    <span style={{ fontSize: 11, color: active ? '#FFD700' : '#555', fontWeight: active ? 600 : 400 }}>
+    <span style={{ fontSize: 11, color: active ? '#7a4800' : '#bbb', fontWeight: active ? 700 : 400 }}>
       {candy}
     </span>
-    <span style={{ fontSize: 10, color: active ? '#bbb' : '#444', marginLeft: 'auto' }}>
+    <span style={{ fontSize: 10, color: active ? GOLD_DARK : '#ccc', marginLeft: 'auto' }}>
       {label}
     </span>
   </div>
@@ -238,9 +245,14 @@ export const StoreDetail: React.FC = () => {
 
       {/* Main overlay */}
       <div style={overlayStyle}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Leckerli+One&display=swap');
+          .sd-close:hover { background: rgba(106,0,170,0.12) !important; }
+          .sd-back:hover  { background: #e6c200 !important; }
+        `}</style>
         {/* Close button */}
-        <button style={closeBtnStyle} onClick={() => selectStock(null)} title="Close (ESC)">
-          {'\u2715'}
+        <button className="sd-close" style={closeBtnStyle} onClick={() => selectStock(null)} title="Close (ESC)">
+          ✕
         </button>
 
         {/* Top Header Bar */}
@@ -266,7 +278,7 @@ export const StoreDetail: React.FC = () => {
                 <span style={tickerStyle}>{ticker}</span>
                 {is_platinum && <span style={platBadgeStyle}>PLATINUM</span>}
               </div>
-              <div style={{ fontSize: 13, color: '#ddd', fontWeight: 500 }}>{company}</div>
+              <div style={{ fontSize: 13, color: '#444', fontWeight: 500, fontFamily: FONT }}>{company}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
                 {sectorInfo && (
                   <span style={{
@@ -274,15 +286,15 @@ export const StoreDetail: React.FC = () => {
                     backgroundColor: sectorInfo.color, display: 'inline-block',
                   }} />
                 )}
-                <span style={{ color: '#bbb', fontSize: 11 }}>{sector}</span>
+                <span style={{ color: '#666', fontSize: 11, fontFamily: FONT }}>{sector}</span>
                 {sectorInfo && (
-                  <span style={{ fontSize: 10, color: '#9370DB' }}> - {sectorInfo.district}</span>
+                  <span style={{ fontSize: 10, color: PURPLE, fontFamily: FONT }}> – {sectorInfo.district}</span>
                 )}
               </div>
             </div>
-            <div style={{ marginLeft: 'auto' }}>
+            <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
               <StarRating score={golden_score} />
-              <span style={{ fontSize: 11, color: '#FFD700', fontWeight: 700 }}>
+              <span style={{ fontSize: 11, color: GOLD_DARK, fontWeight: 700, fontFamily: FONT }}>
                 {golden_score}/5
               </span>
             </div>
@@ -300,7 +312,7 @@ export const StoreDetail: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            borderRight: '1px solid rgba(255,255,255,0.06)',
+            borderRight: '1px solid rgba(106,0,170,0.10)',
             paddingRight: 12,
           }}>
             <DoorCrowdViz doorCount={doorCount} insideCount={insideCount} />
@@ -309,50 +321,26 @@ export const StoreDetail: React.FC = () => {
           {/* Center: 4 Trade Lanes */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={sectionTitleStyle}>Trade Lanes</div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flex: 1, alignItems: 'flex-end' }}>
-              <TradeBar
-                label="BUY"
-                pct={buyPct}
-                agentCount={buyCount}
-                color="#00FF7F"
-                maxPct={maxPct}
-              />
-              <TradeBar
-                label="CALL"
-                pct={callPct}
-                agentCount={callCount}
-                color="#00BFFF"
-                maxPct={maxPct}
-              />
-              <TradeBar
-                label="PUT"
-                pct={putPct}
-                agentCount={putCount}
-                color="#FFD700"
-                maxPct={maxPct}
-              />
-              <TradeBar
-                label="SHORT"
-                pct={shortPct}
-                agentCount={shortCount}
-                color="#FF4500"
-                maxPct={maxPct}
-              />
+            <div style={{ display: 'flex', gap: 4, justifyContent: 'center', flex: 1, alignItems: 'flex-end' }}>
+              <TradeBar label="BUY"   pct={buyPct}   agentCount={buyCount}   color={GOLD}    maxPct={maxPct} />
+              <TradeBar label="CALL"  pct={callPct}  agentCount={callCount}  color={PURPLE}  maxPct={maxPct} />
+              <TradeBar label="PUT"   pct={putPct}   agentCount={putCount}   color="#FF8C00" maxPct={maxPct} />
+              <TradeBar label="SHORT" pct={shortPct} agentCount={shortCount} color="#c0392b" maxPct={maxPct} />
             </div>
           </div>
 
           {/* Right: Stats Panel */}
           <div style={{
             width: 200,
-            borderLeft: '1px solid rgba(255,255,255,0.06)',
+            borderLeft: '1px solid rgba(106,0,170,0.10)',
             paddingLeft: 12,
             overflowY: 'auto',
           }}>
             {/* Forward Returns */}
             <div style={sectionTitleStyle}>Forward Returns (60d)</div>
             <ReturnDistChart dist={forward_return_distribution} />
-            <div style={{ fontSize: 10, color: '#888', marginTop: 4 }}>
-              Skew: <span style={{ color: forward_return_distribution.skew > 0 ? '#00FF7F' : '#FF4500', fontWeight: 600 }}>
+            <div style={{ fontSize: 10, color: '#666', marginTop: 4, fontFamily: FONT }}>
+              Skew: <span style={{ color: forward_return_distribution.skew > 0 ? '#1a7a00' : '#c0392b', fontWeight: 700 }}>
                 {forward_return_distribution.skew.toFixed(2)}
               </span>
             </div>
@@ -375,21 +363,25 @@ export const StoreDetail: React.FC = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingTop: 10,
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          borderTop: '1px solid rgba(106,0,170,0.10)',
           marginTop: 10,
         }}>
-          <span style={{ fontSize: 10, color: '#666' }}>Press ESC to close</span>
+          <span style={{ fontSize: 10, color: '#aaa', fontFamily: FONT }}>Press ESC to close</span>
           <button
+            className="sd-back"
             onClick={() => selectStock(null)}
             style={{
-              background: 'rgba(255,105,180,0.15)',
-              border: '1px solid rgba(255,105,180,0.3)',
-              borderRadius: 6,
-              color: '#FF69B4',
+              background: GOLD,
+              border: `1.5px solid ${GOLD_DARK}`,
+              borderRadius: 8,
+              color: '#3d0066',
               fontSize: 12,
-              padding: '6px 16px',
+              padding: '6px 20px',
               cursor: 'pointer',
-              fontWeight: 600,
+              fontWeight: 700,
+              fontFamily: FONT,
+              boxShadow: `0 2px 8px ${GOLD}55`,
+              transition: 'background 0.15s',
             }}
           >
             Back to City
@@ -397,15 +389,11 @@ export const StoreDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Keyframe animation */}
       <style>{`
-        @keyframes pulse {
-          from { transform: scale(1); }
-          to { transform: scale(1.3); }
-        }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.3); } }
         @keyframes overlaySlideIn {
           from { opacity: 0; transform: scale(0.95) translateY(20px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
+          to   { opacity: 1; transform: scale(1)    translateY(0); }
         }
       `}</style>
     </>
@@ -423,21 +411,21 @@ const backdropStyle: React.CSSProperties = {
 
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
-  top: 'clamp(16px, 5%, 10%)',
-  left: 'clamp(8px, 5%, 15%)',
-  right: 'clamp(8px, 5%, 15%)',
-  bottom: 'clamp(16px, 5%, 10%)',
-  background: 'rgba(20, 18, 36, 0.96)',
+  top: 'clamp(40px, 8%, 14%)',
+  left: 'clamp(40px, 12%, 20%)',
+  right: 'clamp(40px, 12%, 20%)',
+  bottom: 'clamp(40px, 8%, 14%)',
+  background: 'rgba(255, 255, 255, 0.97)',
   backdropFilter: 'blur(20px)',
   WebkitBackdropFilter: 'blur(20px)',
   borderRadius: 16,
-  border: '1px solid rgba(255, 105, 180, 0.15)',
-  boxShadow: '0 0 60px rgba(147, 112, 219, 0.15)',
+  border: '1.5px solid rgba(106,0,170,0.18)',
+  boxShadow: '0 8px 48px rgba(106,0,170,0.14)',
   zIndex: 950,
   padding: '20px 24px',
   display: 'flex',
   flexDirection: 'column',
-  fontFamily: "'Inter', 'Segoe UI', sans-serif",
+  fontFamily: FONT,
   animation: 'overlaySlideIn 0.3s ease-out',
   overflow: 'hidden',
 };
@@ -446,10 +434,10 @@ const closeBtnStyle: React.CSSProperties = {
   position: 'absolute',
   top: 12,
   right: 14,
-  background: 'rgba(255,255,255,0.08)',
-  border: '1px solid rgba(255,255,255,0.15)',
+  background: 'rgba(106,0,170,0.07)',
+  border: '1px solid rgba(106,0,170,0.18)',
   borderRadius: 8,
-  color: '#ccc',
+  color: PURPLE,
   fontSize: 16,
   width: 32,
   height: 32,
@@ -458,6 +446,7 @@ const closeBtnStyle: React.CSSProperties = {
   justifyContent: 'center',
   cursor: 'pointer',
   zIndex: 10,
+  transition: 'background 0.15s',
 };
 
 const headerStyle: React.CSSProperties = {
@@ -466,39 +455,42 @@ const headerStyle: React.CSSProperties = {
 
 const platBadgeStyle: React.CSSProperties = {
   display: 'inline-block',
-  background: 'linear-gradient(135deg, #DAA520, #FFD700)',
-  color: '#1a1a2e',
+  background: `linear-gradient(135deg, ${GOLD_DARK}, ${GOLD})`,
+  color: '#3d0066',
   fontSize: 9,
   fontWeight: 800,
   padding: '2px 8px',
   borderRadius: 3,
   letterSpacing: 1.2,
   textTransform: 'uppercase',
-  boxShadow: '0 0 8px rgba(218,165,32,0.4)',
+  boxShadow: `0 0 8px ${GOLD}88`,
+  fontFamily: FONT,
 };
 
 const tickerStyle: React.CSSProperties = {
   fontSize: 28,
   fontWeight: 800,
-  color: '#FF69B4',
+  color: PURPLE,
   letterSpacing: 1,
   lineHeight: 1.1,
-  textShadow: '0 0 12px rgba(255,105,180,0.3)',
+  fontFamily: FONT,
+  textShadow: `0 0 12px ${PURPLE}22`,
 };
 
 const dividerStyle: React.CSSProperties = {
   height: 1,
-  background: 'rgba(255,255,255,0.06)',
+  background: 'rgba(106,0,170,0.10)',
   margin: '10px 0',
 };
 
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 700,
-  color: '#9370DB',
+  color: PURPLE,
   textTransform: 'uppercase',
   letterSpacing: 1.2,
   marginBottom: 8,
+  fontFamily: FONT,
 };
 
 export default StoreDetail;

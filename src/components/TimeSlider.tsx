@@ -129,46 +129,7 @@ export const TimeSlider: React.FC = () => {
           box-shadow: 0 0 6px ${ACCENT}88; cursor: pointer;
         }
         .ts-ctrl:hover { background: #f0c000 !important; }
-        @keyframes tsShimmer {
-          0%   { transform: translateX(-120%); }
-          100% { transform: translateX(300%); }
-        }
-        .ts-shimmer-1x  { animation: tsShimmer 1.8s linear infinite; }
-        .ts-shimmer-5x  { animation: tsShimmer 0.5s linear infinite; }
-        .ts-shimmer-10x { animation: tsShimmer 0.22s linear infinite; }
       `}</style>
-
-      {/* Animated time progression bar — above controls */}
-      <div style={{
-        width: '100%',
-        maxWidth: 'min(720px, 90vw)' as any,
-        height: 14,
-        borderRadius: 7,
-        background: '#d4a800',
-        border: '2px solid #b38f00',
-        overflow: 'hidden',
-        position: 'relative',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
-      }}>
-        <div style={{
-          height: '100%',
-          width: `${pct}%`,
-          borderRadius: 7,
-          background: '#FFD700',
-          transition: `width ${timeSlider.isPlaying ? (1000 / timeSlider.playbackSpeed) : 400}ms linear`,
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 0 10px #FFD700',
-        }}>
-          <div className={timeSlider.isPlaying ? `ts-shimmer ts-shimmer-${timeSlider.playbackSpeed}x` : ''} style={{
-            position: 'absolute',
-            top: 0, left: 0, bottom: 0,
-            width: '40%',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent)',
-            borderRadius: 7,
-          }} />
-        </div>
-      </div>
 
       {/* Top row: mode buttons | date display | date picker | playback | speed */}
       <div style={topRowStyle}>
@@ -307,11 +268,7 @@ const containerStyle: React.CSSProperties = {
   height: 'auto',
   minHeight: 56,
   maxHeight: 110,
-  background: 'rgba(255,255,255,0.88)',
-  backdropFilter: 'blur(10px)',
-  WebkitBackdropFilter: 'blur(10px)',
-  borderTop: '1.5px solid rgba(106,0,170,0.18)',
-  boxShadow: '0 -2px 16px rgba(106,0,170,0.08)',
+  background: 'transparent',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
