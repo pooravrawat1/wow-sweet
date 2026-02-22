@@ -237,4 +237,4 @@ export interface AgentEdge {
 }
 
 // --- Pages ---
-export type PageName = 'city' | 'network' | 'agents' | 'playground' | 'agent-network' | 'journal';
+export type PageName = 'city' | 'network' | 'agents' | 'playground';

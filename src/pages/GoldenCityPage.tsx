@@ -2,7 +2,7 @@
 // SweetReturns — GoldenCityPage: 3-column layout
 // ============================================================
 
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy } from 'react';
 import { useStore } from '../store/useStore';
 import { WhaleLeaderboard } from '../components/WhaleLeaderboard';
 import { AgentLeaderboard } from '../components/AgentLeaderboard';
@@ -13,13 +13,10 @@ const CandyCity = lazy(() => import('../components/CandyCity'));
 const TimeSlider = lazy(() => import('../components/TimeSlider'));
 const SectorFilter = lazy(() => import('../components/SectorFilter'));
 const StoreDetail = lazy(() => import('../components/StoreDetail'));
-const FuturePredictions = lazy(() => import('../components/FuturePredictions'));
-
 const FONT = `'Leckerli One', cursive`;
 
 export default function GoldenCityPage() {
   const selectedStock = useStore((s) => s.selectedStock);
-  const [rightTab, setRightTab] = useState<'news' | 'predictions'>('news');
 
   return (
     <div style={{
@@ -104,11 +101,11 @@ export default function GoldenCityPage() {
         </div>
       </div>
 
-      {/* ── RIGHT PANEL: Tabbed News / Predictions (overlay) ── */}
+      {/* ── RIGHT PANEL: Future Prediction (overlay) ── */}
       <div style={{
         position: 'absolute',
         top: 8, right: 8, bottom: 8,
-        width: 300,
+        width: 380,
         background: 'rgba(255,255,255,0.72)',
         border: '1.5px solid rgba(106,0,170,0.13)',
         borderRadius: 16,
@@ -119,39 +116,10 @@ export default function GoldenCityPage() {
         display: 'flex',
         flexDirection: 'column',
       }}>
-        {/* Tab buttons */}
-        <div style={{
-          display: 'flex', flexShrink: 0,
-          borderBottom: '1.5px solid rgba(106,0,170,0.13)',
-        }}>
-          {([
-            { key: 'news' as const, label: 'News Injector' },
-            { key: 'predictions' as const, label: 'Predictions' },
-          ]).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setRightTab(tab.key)}
-              style={{
-                flex: 1, padding: '10px 0',
-                background: rightTab === tab.key ? 'rgba(106,0,170,0.08)' : 'transparent',
-                color: rightTab === tab.key ? '#4b0082' : '#7a4800',
-                border: 'none',
-                borderBottom: rightTab === tab.key ? '2px solid #6a00aa' : '2px solid transparent',
-                fontFamily: FONT,
-                fontSize: 11, fontWeight: rightTab === tab.key ? 700 : 400,
-                cursor: 'pointer', transition: 'all 0.18s',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        {/* Tab content */}
-        <div style={{ flex: 1, overflow: 'hidden' }}>
-          <Suspense fallback={null}>
-            {rightTab === 'news' ? <NewsInjector /> : <FuturePredictions />}
-          </Suspense>
-        </div>
+        {/* Injector fills everything */}
+        <Suspense fallback={null}>
+          <NewsInjector />
+        </Suspense>
       </div>
     </div>
   );

@@ -5,23 +5,19 @@ import { loadStockData, modulateStocksByTime } from './data/stockData';
 import { apiClient } from './services/apiClient';
 import { initTrackedAgents, processDay, getLeaderboard } from './services/tradeTracker';
 import { updateWhaleAllocations } from './services/whaleArena';
-import { CandyCane, ChartLine, LightningBolt, WebNodes, Gumball, NoteBook, Lollipop } from './components/CandyIcons';
+import { CandyCane, ChartLine, LightningBolt, Gumball, Lollipop } from './components/CandyIcons';
 import type { PageName } from './types';
 
 const GoldenCityPage = lazy(() => import('./pages/GoldenCityPage'));
 const StockNetworkPage = lazy(() => import('./pages/StockNetworkPage'));
 const AgentReactionsPage = lazy(() => import('./pages/AgentReactionsPage'));
 const GraphPlaygroundPage = lazy(() => import('./pages/GraphPlaygroundPage'));
-const AgentNetworkPage = lazy(() => import('./pages/AgentNetworkPage'));
-const TradeJournalPage = lazy(() => import('./pages/TradeJournalPage'));
 
 const NAV_ITEMS: { path: string; label: string; icon: React.ReactNode; page: PageName }[] = [
   { path: '/', label: 'City', icon: <CandyCane size={16} />, page: 'city' },
   { path: '/network', label: 'Stock Network', icon: <ChartLine size={16} />, page: 'network' },
   { path: '/agents', label: 'Agent Reactions', icon: <LightningBolt size={16} />, page: 'agents' },
-  { path: '/agent-network', label: 'Agent Network', icon: <WebNodes size={16} />, page: 'agent-network' },
   { path: '/playground', label: 'Playground', icon: <Gumball size={16} />, page: 'playground' },
-  { path: '/journal', label: 'Trade Journal', icon: <NoteBook size={16} />, page: 'journal' },
 ];
 
 function LoadingScreen() {
@@ -286,9 +282,7 @@ export default function App() {
                   <Route path="/" element={<GoldenCityPage />} />
                   <Route path="/network" element={<StockNetworkPage />} />
                   <Route path="/agents" element={<AgentReactionsPage />} />
-                  <Route path="/agent-network" element={<AgentNetworkPage />} />
                   <Route path="/playground" element={<GraphPlaygroundPage />} />
-                  <Route path="/journal" element={<TradeJournalPage />} />
                 </Routes>
               </Suspense>
             </div>
