@@ -1,6 +1,8 @@
 // ============================================================
 // SweetReturns — API Client
 // Centralized backend communication with connection status tracking
+// Tries same-origin /api/ routes (Vercel serverless) first,
+// then falls back to external backend URL (localhost:8000 etc.)
 // ============================================================
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'fallback';
@@ -10,25 +12,26 @@ export interface BackendHealth {
   databricks: boolean;
   databricks_configured: boolean;
   databricks_status: string;
-  gemini: boolean;
+  gemini?: boolean;
   stocks_available?: boolean;
 }
 
 type StatusListener = (status: ConnectionStatus) => void;
 
 class ApiClient {
-  private _baseUrl: string;
+  private _externalUrl: string;
   private _status: ConnectionStatus = 'disconnected';
   private _listeners: StatusListener[] = [];
   private _healthCheckInterval: ReturnType<typeof setInterval> | null = null;
   private _lastHealth: BackendHealth | null = null;
+  private _resolvedBase: string | null = null;
 
   constructor() {
-    this._baseUrl = import.meta.env.VITE_API_URL
+    this._externalUrl = import.meta.env.VITE_API_URL
       || `http://${window.location.hostname}:8000`;
   }
 
-  get baseUrl(): string { return this._baseUrl; }
+  get baseUrl(): string { return this._resolvedBase || '/api'; }
   get status(): ConnectionStatus { return this._status; }
   get lastHealth(): BackendHealth | null { return this._lastHealth; }
   get isDatabricksConnected(): boolean {
@@ -49,6 +52,15 @@ class ApiClient {
     }
   }
 
+  /** Try fetching from a URL, return response if ok. */
+  private async _tryFetch(url: string, timeout = 5000): Promise<Response | null> {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(timeout) });
+      if (res.ok) return res;
+    } catch { /* ignore */ }
+    return null;
+  }
+
   startHealthCheck() {
     this.checkHealth();
     this._healthCheckInterval = setInterval(() => this.checkHealth(), 30_000);
@@ -62,44 +74,64 @@ class ApiClient {
   }
 
   async checkHealth(): Promise<BackendHealth | null> {
-    try {
-      this.setStatus('connecting');
-      const res = await fetch(`${this._baseUrl}/health`, {
-        signal: AbortSignal.timeout(5000),
-      });
-      if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
-      const health: BackendHealth = await res.json();
-      this._lastHealth = health;
-      this.setStatus(health.databricks ? 'connected' : 'fallback');
-      return health;
-    } catch {
-      this._lastHealth = null;
-      this.setStatus('disconnected');
-      return null;
+    this.setStatus('connecting');
+
+    // Try same-origin /api/ first (Vercel serverless)
+    const vercelRes = await this._tryFetch('/api/health', 8000);
+    if (vercelRes) {
+      try {
+        const health: BackendHealth = await vercelRes.json();
+        this._lastHealth = health;
+        this._resolvedBase = '/api';
+        this.setStatus(health.databricks ? 'connected' : 'fallback');
+        return health;
+      } catch { /* parse error, try external */ }
     }
+
+    // Try external backend (localhost:8000 or VITE_API_URL)
+    const extRes = await this._tryFetch(`${this._externalUrl}/health`, 5000);
+    if (extRes) {
+      try {
+        const health: BackendHealth = await extRes.json();
+        this._lastHealth = health;
+        this._resolvedBase = this._externalUrl;
+        this.setStatus(health.databricks ? 'connected' : 'fallback');
+        return health;
+      } catch { /* parse error */ }
+    }
+
+    this._lastHealth = null;
+    this._resolvedBase = null;
+    this.setStatus('disconnected');
+    return null;
   }
 
   async fetchStocks(): Promise<{ stocks: any[]; correlation_edges: any[]; source: string } | null> {
-    try {
-      const res = await fetch(`${this._baseUrl}/stocks`, {
-        signal: AbortSignal.timeout(45000),
-      });
-      if (!res.ok) throw new Error(`Stocks fetch failed: ${res.status}`);
-      const data = await res.json();
-      if (!data.stocks || data.stocks.length === 0) return null;
-      return {
-        stocks: data.stocks,
-        correlation_edges: data.correlation_edges || [],
-        source: data.source || 'backend',
-      };
-    } catch {
-      return null;
+    // Try resolved base first, then both origins
+    const urls = this._resolvedBase
+      ? [`${this._resolvedBase}/stocks`]
+      : ['/api/stocks', `${this._externalUrl}/stocks`];
+
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(45000) });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (!data.stocks || data.stocks.length === 0) continue;
+        return {
+          stocks: data.stocks,
+          correlation_edges: data.correlation_edges || [],
+          source: data.source || 'backend',
+        };
+      } catch { /* try next */ }
     }
+    return null;
   }
 
   async fetchRegime(): Promise<any | null> {
+    const base = this._resolvedBase || this._externalUrl;
     try {
-      const res = await fetch(`${this._baseUrl}/regime`, {
+      const res = await fetch(`${base}/regime`, {
         signal: AbortSignal.timeout(10000),
       });
       if (!res.ok) return null;
