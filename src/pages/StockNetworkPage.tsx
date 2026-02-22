@@ -298,6 +298,28 @@ export default function StockNetworkPage() {
     return set;
   }, [filteredEdges, highlightedNode]);
 
+  // Connected stocks with edge weights (for selected node panel)
+  const connectedStocks = useMemo(() => {
+    if (!highlightedNode) return [];
+    const connections: { ticker: string; weight: number; sector: string; company: string }[] = [];
+    filteredEdges.forEach((e) => {
+      let neighbor: string | null = null;
+      if (e.source === highlightedNode) neighbor = e.target;
+      else if (e.target === highlightedNode) neighbor = e.source;
+      if (neighbor) {
+        const s = stocks.find((st) => st.ticker === neighbor);
+        connections.push({
+          ticker: neighbor,
+          weight: e.weight,
+          sector: s?.sector || '',
+          company: s?.company || neighbor,
+        });
+      }
+    });
+    connections.sort((a, b) => b.weight - a.weight);
+    return connections;
+  }, [filteredEdges, highlightedNode, stocks]);
+
   // Dynamic ForceGraph3D import attempt (for code-split scenario)
   useEffect(() => {
     if (!ForceGraph3D) {
@@ -500,56 +522,138 @@ export default function StockNetworkPage() {
           </div>
         </div>
 
-        {/* Highlighted node info */}
+        {/* Highlighted node info + connected stocks */}
         {highlightedNode && (() => {
           const stock = stocks.find(s => s.ticker === highlightedNode);
-          const connCount = highlightLinks.size - 1;
+          const connCount = connectedStocks.length;
           return (
-            <div style={{ padding: '16px 20px' }}>
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, flex: '1 1 0' }}>
+              {/* Selected stock header */}
               <div
                 style={{
                   padding: 14,
-                  background: 'linear-gradient(135deg, #1e1e3a, #1a1a35)',
+                  background: 'linear-gradient(135deg, rgba(106,0,170,0.12), rgba(255,215,0,0.08))',
                   borderRadius: 10,
-                  border: `1px solid ${ACCENT}33`,
+                  border: `2px solid ${ACCENT}55`,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                   <span style={{
-                    width: 8, height: 8, borderRadius: '50%',
+                    width: 10, height: 10, borderRadius: '50%',
                     background: stock ? sectorColor(stock.sector) : '#888',
-                    boxShadow: `0 0 8px ${stock ? sectorColor(stock.sector) : '#888'}66`,
+                    boxShadow: `0 0 10px ${stock ? sectorColor(stock.sector) : '#888'}88`,
                   }} />
-                  <span style={{ fontSize: 15, color: ACCENT, fontWeight: 700 }}>
+                  <span style={{ fontSize: 16, color: ACCENT, fontWeight: 700, fontFamily: FONT }}>
                     {highlightedNode}
                   </span>
+                  <button
+                    onClick={() => setHighlightedNode(null)}
+                    style={{
+                      marginLeft: 'auto', background: 'none', border: 'none',
+                      color: '#888', cursor: 'pointer', fontSize: 14, padding: '0 4px',
+                    }}
+                    title="Clear selection"
+                  >
+                    x
+                  </button>
                 </div>
                 {stock && (
-                  <div style={{ fontSize: 12, color: '#aaa', marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, color: '#7a4800', marginBottom: 6 }}>
                     {stock.company}
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 12, fontSize: 11, fontFamily: "'Leckerli One', cursive" }}>
+                <div style={{ display: 'flex', gap: 12, fontSize: 11, fontFamily: FONT }}>
                   <div>
-                    <span style={{ color: '#666' }}>Connections </span>
-                    <span style={{ color: TEXT_COLOR }}>{connCount}</span>
+                    <span style={{ color: '#888' }}>Connections </span>
+                    <span style={{ color: ACCENT, fontWeight: 700 }}>{connCount}</span>
                   </div>
                   {stock && (
                     <>
                       <div>
-                        <span style={{ color: '#666' }}>Score </span>
-                        <span style={{ color: stock.golden_score >= 3 ? ACCENT : TEXT_COLOR }}>
+                        <span style={{ color: '#888' }}>Score </span>
+                        <span style={{ color: stock.golden_score >= 3 ? '#FFD700' : TEXT_COLOR, fontWeight: 700 }}>
                           {stock.golden_score}
                         </span>
                       </div>
                       <div>
-                        <span style={{ color: '#666' }}>Sector </span>
-                        <span style={{ color: sectorColor(stock.sector) }}>{stock.sector}</span>
+                        <span style={{ color: '#888' }}>Sector </span>
+                        <span style={{ color: sectorColor(stock.sector), fontWeight: 600 }}>{stock.sector}</span>
                       </div>
                     </>
                   )}
                 </div>
               </div>
+
+              {/* Connected stocks list */}
+              {connCount > 0 && (
+                <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                  <h3 style={{
+                    color: '#7a4800', fontSize: 11, margin: '0 0 8px', letterSpacing: 1.5,
+                    textTransform: 'uppercase', fontWeight: 600, fontFamily: FONT,
+                  }}>
+                    Connected Stocks ({connCount})
+                  </h3>
+                  <div style={{
+                    flex: '1 1 0', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2,
+                    maxHeight: 'calc(100vh - 600px)', minHeight: 80,
+                  }}>
+                    {connectedStocks.map((conn) => (
+                      <div
+                        key={conn.ticker}
+                        onClick={() => handleNodeClick(conn.ticker)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '6px 10px', borderRadius: 6,
+                          cursor: 'pointer',
+                          background: 'rgba(106,0,170,0.04)',
+                          border: `1px solid ${BORDER_COLOR}`,
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(106,0,170,0.10)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(106,0,170,0.04)')}
+                      >
+                        <span style={{
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: sectorColor(conn.sector),
+                          flexShrink: 0,
+                        }} />
+                        <span style={{ fontSize: 12, fontWeight: 700, color: ACCENT, minWidth: 42, fontFamily: FONT }}>
+                          {conn.ticker}
+                        </span>
+                        <span style={{
+                          fontSize: 10, color: '#7a4800', flex: 1,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {conn.company}
+                        </span>
+                        {/* Correlation strength bar */}
+                        <div style={{
+                          width: 40, height: 6, borderRadius: 3,
+                          background: 'rgba(106,0,170,0.1)', flexShrink: 0,
+                          overflow: 'hidden',
+                        }}>
+                          <div style={{
+                            width: `${Math.round(Math.abs(conn.weight) * 100)}%`,
+                            height: '100%', borderRadius: 3,
+                            background: conn.weight > 0.7 ? '#FFD700' : conn.weight > 0.5 ? ACCENT : '#7a4800',
+                          }} />
+                        </div>
+                        <span style={{
+                          fontSize: 10, color: conn.weight > 0.7 ? '#FFD700' : '#888',
+                          fontWeight: 600, minWidth: 30, textAlign: 'right', fontFamily: FONT,
+                        }}>
+                          {conn.weight.toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {connCount === 0 && (
+                <div style={{ fontSize: 12, color: '#888', fontStyle: 'italic', fontFamily: FONT }}>
+                  No connections at current threshold
+                </div>
+              )}
             </div>
           );
         })()}
@@ -576,32 +680,62 @@ export default function StockNetworkPage() {
           <ForceGraph3D
             graphData={graphData}
             nodeLabel="name"
-            nodeVal="val"
-            nodeColor={(node: any) => {
-              if (highlightedNode && node.id !== highlightedNode && !highlightLinks.has(node.id)) {
-                return '#222233';
-              }
-              return node.color;
+            nodeVal={(node: any) => {
+              if (!highlightedNode) return 2 + (node.goldenScore || 0) * 3;
+              if (node.id === highlightedNode) return 8 + (node.goldenScore || 0) * 4;
+              if (highlightLinks.has(node.id)) return 4 + (node.goldenScore || 0) * 3;
+              return 1;
             }}
-            nodeOpacity={1}
+            nodeColor={(node: any) => {
+              if (!highlightedNode) return node.color;
+              if (node.id === highlightedNode) return '#FFD700';
+              if (highlightLinks.has(node.id)) return node.color;
+              return '#181825';
+            }}
+            nodeOpacity={highlightedNode ? 0.9 : 0.85}
+            nodeVisibility={(node: any) => {
+              if (!highlightedNode) return true;
+              if (node.id === highlightedNode || highlightLinks.has(node.id)) return true;
+              return true; // still visible but dimmed via color
+            }}
             linkColor={(link: any) => {
               const src = typeof link.source === 'object' ? link.source.id : link.source;
               const tgt = typeof link.target === 'object' ? link.target.id : link.target;
               if (highlightedNode && (src === highlightedNode || tgt === highlightedNode)) {
-                return ACCENT;
+                return '#FFD700';
               }
+              if (highlightedNode) return '#0a0a15';
               return '#333355';
             }}
-            linkOpacity={0.2}
+            linkOpacity={highlightedNode ? 0.8 : 0.15}
+            linkVisibility={(link: any) => {
+              if (!highlightedNode) return true;
+              const src = typeof link.source === 'object' ? link.source.id : link.source;
+              const tgt = typeof link.target === 'object' ? link.target.id : link.target;
+              // Only show links connected to the highlighted node
+              return src === highlightedNode || tgt === highlightedNode;
+            }}
             linkWidth={(link: any) => {
               const src = typeof link.source === 'object' ? link.source.id : link.source;
               const tgt = typeof link.target === 'object' ? link.target.id : link.target;
               if (highlightedNode && (src === highlightedNode || tgt === highlightedNode)) {
-                return 2;
+                return 3;
               }
               return 0.3;
             }}
+            linkDirectionalParticles={(link: any) => {
+              const src = typeof link.source === 'object' ? link.source.id : link.source;
+              const tgt = typeof link.target === 'object' ? link.target.id : link.target;
+              if (highlightedNode && (src === highlightedNode || tgt === highlightedNode)) {
+                return 4;
+              }
+              return 0;
+            }}
+            linkDirectionalParticleWidth={2}
+            linkDirectionalParticleColor={() => '#FFD700'}
+            linkDirectionalParticleSpeed={0.006}
             onNodeClick={handleNodeClick}
+            onBackgroundClick={() => setHighlightedNode(null)}
             backgroundColor="#0a0a1e"
             width={undefined}
             height={undefined}
