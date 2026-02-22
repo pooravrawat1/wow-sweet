@@ -14,6 +14,20 @@ spark = SparkSession.builder.getOrCreate()
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Create Catalog & Schemas (Unity Catalog)
+
+# COMMAND ----------
+
+# Create the sweetreturns catalog and bronze/silver/gold schemas if they don't exist
+spark.sql("CREATE CATALOG IF NOT EXISTS sweetreturns")
+spark.sql("CREATE SCHEMA IF NOT EXISTS sweetreturns.bronze")
+spark.sql("CREATE SCHEMA IF NOT EXISTS sweetreturns.silver")
+spark.sql("CREATE SCHEMA IF NOT EXISTS sweetreturns.gold")
+print("Catalog + schemas ready: sweetreturns.{bronze, silver, gold}")
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Load Raw CSV
 # MAGIC Upload stock_details_5_years.csv to DBFS first:
 # MAGIC ```

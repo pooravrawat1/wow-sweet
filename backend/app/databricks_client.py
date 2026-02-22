@@ -1,17 +1,18 @@
 """
 SweetReturns — Databricks Client
 =================================
-Connects to a Databricks cluster via the SQL Connector to query
-gold-layer Delta tables (FinBERT sentiment, HMM regimes, correlation
-network, agent archetypes, precomputed scenario flows).
+Queries gold-layer Delta tables via the Databricks SQL Statement REST API
+(FinBERT sentiment, HMM regimes, correlation network, agent archetypes,
+precomputed scenario flows).
 
+Uses REST API instead of databricks-sql-connector to avoid connection hangs.
 Falls back to keyword heuristics only when Databricks is unreachable.
 """
 
 import os
 import re
 import logging
-import threading
+import requests as req
 from typing import Optional
 
 logger = logging.getLogger("sweetreturns.databricks")
@@ -19,29 +20,30 @@ logger = logging.getLogger("sweetreturns.databricks")
 
 class DatabricksClient:
     def __init__(self):
-        # Accept both env var names (DATABRICKS_HOST from CLI pipeline, DATABRICKS_WORKSPACE_URL legacy)
         self.host = os.getenv(
             "DATABRICKS_HOST",
             os.getenv("DATABRICKS_WORKSPACE_URL", ""),
         ).rstrip("/")
         self.token = os.getenv("DATABRICKS_TOKEN", "")
         self.http_path = os.getenv("DATABRICKS_SQL_WAREHOUSE_PATH", "")
-        self._connection = None
+
+        # Extract warehouse ID from http_path: /sql/1.0/warehouses/<id>
+        self.warehouse_id = ""
+        if self.http_path:
+            parts = self.http_path.rstrip("/").split("/")
+            self.warehouse_id = parts[-1] if parts else ""
+
         self._connected = False
-        self._connect_attempted = False
-        self._connecting = False
 
         # Cache for data that doesn't change often
         self._regime_cache: dict = {}
         self._archetype_cache: list = []
         self._network_cache: dict = {}
 
-        self.is_configured = bool(self.host and self.token and self.http_path)
+        self.is_configured = bool(self.host and self.token and self.warehouse_id)
 
         if self.is_configured:
-            logger.info(f"Databricks configured: {self.host}")
-            # Start background connection attempt so /health doesn't block
-            threading.Thread(target=self._get_connection, daemon=True).start()
+            logger.info(f"Databricks configured: {self.host} (warehouse: {self.warehouse_id})")
         else:
             logger.warning(
                 "Databricks credentials not set — running with local fallbacks. "
@@ -49,65 +51,69 @@ class DatabricksClient:
                 "DATABRICKS_SQL_WAREHOUSE_PATH in your .env"
             )
 
-    # ── Connection Management ─────────────────────────────────────────────
-
-    def _get_connection(self):
-        """Lazy-connect to Databricks SQL. Returns connection or None."""
-        if self._connection is not None:
-            return self._connection
-
-        if not self.is_configured or self._connecting:
-            return None
-
-        self._connecting = True
-        self._connect_attempted = True
-        try:
-            from databricks import sql as databricks_sql
-
-            hostname = self.host.replace("https://", "").replace("http://", "")
-            logger.info(f"Connecting to Databricks: {hostname} ...")
-            self._connection = databricks_sql.connect(
-                server_hostname=hostname,
-                http_path=self.http_path,
-                access_token=self.token,
-            )
-            self._connected = True
-            logger.info("Connected to Databricks SQL")
-            return self._connection
-        except ImportError:
-            logger.warning(
-                "databricks-sql-connector not installed. "
-                "Install with: pip install databricks-sql-connector"
-            )
-            return None
-        except Exception as e:
-            logger.warning(f"Could not connect to Databricks: {e}")
-            return None
-        finally:
-            self._connecting = False
+    # ── SQL Statement REST API ─────────────────────────────────────────
 
     def _query(self, sql: str, params=None) -> list:
-        """Execute SQL and return list of dicts. Returns [] on failure."""
-        conn = self._get_connection()
-        if conn is None:
+        """Execute SQL via Databricks SQL Statement REST API. Returns list of dicts."""
+        if not self.is_configured:
             return []
 
+        # Inline parameter substitution (REST API doesn't support %s placeholders)
+        if params:
+            sql = self._interpolate_params(sql, params)
+
         try:
-            cursor = conn.cursor()
-            if params:
-                cursor.execute(sql, params)
-            else:
-                cursor.execute(sql)
-            columns = [desc[0] for desc in cursor.description]
-            rows = cursor.fetchall()
-            cursor.close()
+            resp = req.post(
+                f"{self.host}/api/2.0/sql/statements/",
+                headers={
+                    "Authorization": f"Bearer {self.token}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "warehouse_id": self.warehouse_id,
+                    "statement": sql,
+                    "wait_timeout": "30s",
+                },
+                timeout=35,
+            )
+
+            if resp.status_code != 200:
+                logger.warning(f"Databricks SQL API error {resp.status_code}: {resp.text[:200]}")
+                return []
+
+            data = resp.json()
+            state = data.get("status", {}).get("state", "")
+
+            if state != "SUCCEEDED":
+                error_msg = data.get("status", {}).get("error", {}).get("message", "unknown")
+                logger.warning(f"Databricks query failed ({state}): {error_msg}")
+                return []
+
+            # Mark as connected on first successful query
+            if not self._connected:
+                self._connected = True
+                logger.info("Databricks SQL — first successful query")
+
+            # Parse result
+            manifest = data.get("manifest", {})
+            columns = [col["name"] for col in manifest.get("schema", {}).get("columns", [])]
+            rows = data.get("result", {}).get("data_array", [])
+
             return [dict(zip(columns, row)) for row in rows]
-        except Exception as e:
-            logger.warning(f"Databricks query failed: {e}")
-            # Reset connection on failure so next call retries
-            self._connection = None
-            self._connected = False
+
+        except req.Timeout:
+            logger.warning("Databricks SQL API timeout (35s)")
             return []
+        except Exception as e:
+            logger.warning(f"Databricks SQL API error: {e}")
+            return []
+
+    def _interpolate_params(self, sql: str, params: list) -> str:
+        """Replace %s placeholders with escaped string values."""
+        for param in params:
+            escaped = str(param).replace("'", "''")
+            sql = sql.replace("%s", f"'{escaped}'", 1)
+        return sql
 
     def _query_scalar(self, sql: str, params=None):
         """Execute SQL and return single value. Returns None on failure."""
@@ -119,31 +125,26 @@ class DatabricksClient:
 
     @property
     def is_connected(self) -> bool:
-        """Check if Databricks is connected. Non-blocking — never triggers a new connection."""
+        """Check if Databricks has successfully responded to at least one query."""
         return self._connected
 
-    # ── Sentiment Analysis ────────────────────────────────────────────────
+    # ── Sentiment Analysis ────────────────────────────────────────────
 
     async def analyze_sentiment(self, text: str) -> dict:
         """
         Analyze text sentiment. Tries:
         1. Databricks FinBERT model serving endpoint
-        2. Query pre-computed FinBERT scores from gold.news_sentiment
-        3. Keyword fallback
+        2. Keyword fallback
         """
-        # Try FinBERT model serving endpoint
         if self.host and self.token:
             result = self._call_finbert_endpoint(text)
             if result:
                 return result
 
-        # Fallback: keyword-based sentiment
         return self._fallback_sentiment(text)
 
     def _call_finbert_endpoint(self, text: str) -> Optional[dict]:
         """Call FinBERT model serving endpoint on Databricks."""
-        import requests as req
-
         endpoint = f"{self.host}/serving-endpoints/finbert-sentiment/invocations"
         headers = {
             "Authorization": f"Bearer {self.token}",
@@ -180,7 +181,7 @@ class DatabricksClient:
         )
         if rows:
             row = rows[0]
-            score = row.get("sentiment_mean", 0.0)
+            score = float(row.get("sentiment_mean", 0.0))
             return {
                 "score": score,
                 "label": "positive" if score > 0.1 else ("negative" if score < -0.1 else "neutral"),
@@ -190,7 +191,7 @@ class DatabricksClient:
             }
         return None
 
-    # ── Market Regime ─────────────────────────────────────────────────────
+    # ── Market Regime ─────────────────────────────────────────────────
 
     async def get_current_regime(self) -> dict:
         """Get the latest HMM-detected market regime from gold.market_regimes."""
@@ -228,7 +229,7 @@ class DatabricksClient:
             "source": "default",
         }
 
-    # ── Correlation Network ───────────────────────────────────────────────
+    # ── Correlation Network ───────────────────────────────────────────
 
     async def get_network_features(self, ticker: str) -> Optional[dict]:
         """Get correlation network features for a ticker from gold.network_features."""
@@ -247,7 +248,7 @@ class DatabricksClient:
             return rows[0]
         return None
 
-    # ── Agent Archetypes ──────────────────────────────────────────────────
+    # ── Agent Archetypes ──────────────────────────────────────────────
 
     async def get_agent_archetypes(self) -> list:
         """Load all 100 agent archetypes from gold.agent_archetypes."""
@@ -270,7 +271,7 @@ class DatabricksClient:
             return rows
         return []
 
-    # ── Precomputed Agent Flows ───────────────────────────────────────────
+    # ── Precomputed Agent Flows ───────────────────────────────────────
 
     async def get_agent_flows(self, scenario: str, timestamp: int) -> list:
         """
@@ -317,13 +318,12 @@ class DatabricksClient:
         # Databricks unreachable — mock flows
         return self._mock_agent_flows(scenario, timestamp)
 
-    # ── Data Quality (from Databricks tables) ─────────────────────────────
+    # ── Data Quality (from Databricks tables) ─────────────────────────
 
     async def get_data_quality(self) -> dict:
         """Query data quality metrics directly from Databricks Delta tables."""
         quality = {"source": "databricks", "layers": {}}
 
-        # Bronze layer
         bronze_count = self._query_scalar(
             "SELECT COUNT(*) FROM sweetreturns.bronze.raw_stock_data"
         )
@@ -337,7 +337,6 @@ class DatabricksClient:
                 "status": "ok",
             }
 
-        # Silver layer
         silver_count = self._query_scalar(
             "SELECT COUNT(*) FROM sweetreturns.silver.stock_features"
         )
@@ -351,7 +350,6 @@ class DatabricksClient:
                 "status": "ok",
             }
 
-        # Gold layer
         gold_count = self._query_scalar(
             "SELECT COUNT(*) FROM sweetreturns.gold.golden_tickets"
         )
@@ -365,7 +363,6 @@ class DatabricksClient:
                 "status": "ok",
             }
 
-        # Sentiment
         sentiment_count = self._query_scalar(
             "SELECT COUNT(*) FROM sweetreturns.gold.news_sentiment"
         )
@@ -375,7 +372,6 @@ class DatabricksClient:
                 "status": "ok",
             }
 
-        # Regimes
         regime_count = self._query_scalar(
             "SELECT COUNT(*) FROM sweetreturns.gold.market_regimes"
         )
@@ -385,7 +381,6 @@ class DatabricksClient:
                 "status": "ok",
             }
 
-        # Agent flows
         flow_count = self._query_scalar(
             "SELECT COUNT(*) FROM sweetreturns.gold.precomputed_agent_flows"
         )
@@ -401,7 +396,7 @@ class DatabricksClient:
 
         return quality
 
-    # ── Affected Stocks ───────────────────────────────────────────────────
+    # ── Affected Stocks ───────────────────────────────────────────────
 
     async def get_affected_stocks(self, text: str) -> list:
         """Extract ticker mentions from text, validate against known tickers."""
@@ -414,13 +409,11 @@ class DatabricksClient:
         }
         candidates = [t for t in tickers if t not in stop_words]
 
-        # Validate against Databricks if available
         if candidates and self.is_configured:
-            placeholders = ",".join(["%s"] * len(candidates))
+            placeholders = ",".join([f"'{t}'" for t in candidates])
             rows = self._query(
                 f"SELECT DISTINCT ticker FROM sweetreturns.bronze.raw_stock_data "
                 f"WHERE ticker IN ({placeholders})",
-                candidates,
             )
             if rows:
                 valid = {r["ticker"] for r in rows}
@@ -428,7 +421,7 @@ class DatabricksClient:
 
         return candidates
 
-    # ── Agent Reaction (uses regime + sentiment from Databricks) ──────────
+    # ── Agent Reaction (uses regime + sentiment from Databricks) ──────
 
     async def compute_agent_reaction(
         self, sentiment: dict, affected_tickers: list
@@ -439,21 +432,17 @@ class DatabricksClient:
         """
         regime = await self.get_current_regime()
         regime_label = regime.get("regime", "Neutral")
-        regime_urgency = regime.get("agent_urgency", 1.0)
 
         reactions = []
         label = sentiment.get("label", "neutral").lower()
         score = abs(sentiment.get("score", 0.0))
         base_count = max(2000, int(score * 10000))
 
-        # Regime modulates reaction intensity
         if regime_label == "Bear":
-            # Bear market: more panic, larger swarms for sells
             urgency_mult = 1.3
             sell_boost = 1.5
             buy_boost = 0.6
         elif regime_label == "Bull":
-            # Bull market: more FOMO, larger swarms for buys
             urgency_mult = 0.9
             sell_boost = 0.7
             buy_boost = 1.4
@@ -463,10 +452,8 @@ class DatabricksClient:
             buy_boost = 1.0
 
         for ticker in affected_tickers:
-            # Enrich with FinBERT sentiment if available
             ticker_sentiment = await self.get_ticker_sentiment(ticker)
             if ticker_sentiment and ticker_sentiment.get("source") == "finbert":
-                # Blend Gemini/keyword sentiment with FinBERT historical sentiment
                 finbert_score = ticker_sentiment.get("score", 0)
                 blended_score = score * 0.6 + abs(finbert_score) * 0.4
                 momentum = ticker_sentiment.get("momentum_3d", 0)
@@ -478,7 +465,6 @@ class DatabricksClient:
                 agent_count = int(base_count * sell_boost)
                 urgency = min((0.5 + blended_score * 0.5) * urgency_mult, 0.99)
                 action = "panic_sell"
-                # If momentum was positive before bad news, even more panic
                 if momentum > 0.1:
                     urgency = min(urgency + 0.1, 0.99)
                     agent_count = int(agent_count * 1.2)
@@ -501,7 +487,7 @@ class DatabricksClient:
 
         return {"reactions": reactions, "regime": regime_label}
 
-    # ── Keyword Fallback ──────────────────────────────────────────────────
+    # ── Keyword Fallback ──────────────────────────────────────────────
 
     def _fallback_sentiment(self, text: str) -> dict:
         """Simple keyword-based sentiment when Databricks/FinBERT is unavailable."""
@@ -528,7 +514,7 @@ class DatabricksClient:
         else:
             return {"score": 0.0, "label": "neutral"}
 
-    # ── Mock Flows (local dev only) ───────────────────────────────────────
+    # ── Mock Flows (local dev only) ───────────────────────────────────
 
     def _mock_agent_flows(self, scenario: str, timestamp: int) -> list:
         """Mock flows for local development without Databricks."""

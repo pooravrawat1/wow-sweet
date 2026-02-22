@@ -131,10 +131,8 @@ Article{' from ' + source_url if source_url else ''}:
 async def health():
     if db_client.is_connected:
         db_status = "connected"
-    elif db_client._connecting:
-        db_status = "connecting"
     elif db_client.is_configured:
-        db_status = "configured (not yet connected)"
+        db_status = "configured (queries will connect on first use)"
     else:
         db_status = "not configured"
     return {
@@ -144,6 +142,7 @@ async def health():
         "databricks": db_client.is_connected,
         "databricks_status": db_status,
         "databricks_host": db_client.host[:40] + "..." if db_client.host else "not configured",
+        "warehouse_id": db_client.warehouse_id or "not configured",
     }
 
 
