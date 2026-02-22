@@ -27,7 +27,7 @@ function LoadingScreen() {
       position: 'fixed', inset: 0,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       background: '#1a1a2e', color: '#FFD700',
-      fontSize: 20, fontFamily: "'Lobster', cursive", gap: 16,
+      fontSize: 20, fontFamily: "'Leckerli One', cursive", gap: 16,
     }}>
       <div style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
         <Lollipop size={48} />
@@ -215,7 +215,7 @@ export default function App() {
         width: '100vw', height: '100vh',
         background: '#1a1a2e', color: '#fff',
         overflow: 'hidden',
-        fontFamily: "'Lobster', cursive",
+        fontFamily: "'Leckerli One', cursive",
       }}>
         {!minLoadDone ? (
           <LoadingScreen />

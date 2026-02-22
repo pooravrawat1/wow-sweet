@@ -108,7 +108,7 @@ export default function GoldenCityPage() {
         top: 8,
         right: 8,
         bottom: 8,
-        width: 260,
+        width: 300,
         background: 'rgba(255,255,255,0.72)',
         border: '1.5px solid rgba(106,0,170,0.13)',
         borderRadius: 16,

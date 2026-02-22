@@ -84,113 +84,44 @@ function NewsInjector() {
             fontFamily: FONT,
         }}>
 
-            {/* Header */}
-            <div style={{
-                background: '#fff',
-                padding: '12px 16px',
-                borderBottom: `2px solid rgba(106,0,170,0.2)`,
-                flexShrink: 0,
-            }}>
-                <div style={{ fontSize: 20, color: '#4b0082', fontFamily: FONT }}>
-                    News Injector
-                </div>
-                <div style={{
-                    fontSize: 11,
-                    color: '#5a3080',
-                    marginTop: 4,
-                    fontFamily: "'Lobster', cursive",
-                    lineHeight: 1.4,
-                }}>
-                    Put any event in here, we will tell you whatever happens,{' '}
-                    <span style={{ color: '#1a7a00', fontWeight: 700 }}>sweet</span> or{' '}
-                    <span style={{ color: '#a30000', fontWeight: 700 }}>sour</span>.
-                </div>
-            </div>
-
-            {/* Body */}
+            {/* ── Middle: title (idle) or results (active) ── */}
             <div className="sweet-scroll" style={{
                 flex: 1,
                 overflowY: 'auto',
-                padding: '16px',
                 display: 'flex',
                 flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: result || error ? 'flex-start' : 'center',
+                padding: '16px',
                 gap: 12,
             }}>
-
-                {/* Mode badge */}
-                <div style={{
-                    fontSize: 10,
-                    color: isUrl ? '#005fa3' : '#7a4800',
-                    fontFamily: "'Lobster', cursive",
-                    background: isUrl ? 'rgba(0,95,163,0.07)' : 'rgba(122,72,0,0.07)',
-                    padding: '4px 10px',
-                    borderRadius: 20,
-                    alignSelf: 'flex-start',
-                    border: `1px solid ${isUrl ? 'rgba(0,95,163,0.18)' : 'rgba(122,72,0,0.18)'}`,
-                    transition: 'all 0.2s',
-                }}>
-                    {isUrl ? 'URL detected — Gemini will analyze the article' : 'Paste a URL or type market news below'}
-                </div>
-
-                {/* Textarea */}
-                <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="https://cnbc.com/... or paste a headline, rumour, earnings surprise…"
-                    disabled={isLoading}
-                    rows={5}
-                    style={{
-                        width: '100%',
-                        background: 'rgba(255,255,255,0.7)',
-                        color: isUrl ? '#005fa3' : '#2d1a00',
-                        border: `2px solid ${isUrl ? 'rgba(0,95,163,0.35)' : BORDER}`,
-                        borderRadius: 8,
-                        padding: '10px 12px',
-                        fontFamily: "'Lobster', cursive",
-                        fontSize: 12,
-                        resize: 'vertical',
-                        outline: 'none',
-                        boxSizing: 'border-box',
-                        opacity: isLoading ? 0.5 : 1,
-                        transition: 'border-color 0.2s',
-                        boxShadow: 'inset 0 1px 4px rgba(106,0,170,0.06)',
-                    }}
-                />
-
-                {/* Inject button */}
-                <button
-                    onClick={handleInject}
-                    disabled={isLoading || !input.trim()}
-                    style={{
-                        padding: '12px 0',
-                        background: isLoading || !input.trim()
-                            ? 'rgba(106,0,170,0.08)'
-                            : '#FFD700',
-                        color: isLoading || !input.trim() ? '#9b30d9' : '#3d0066',
-                        border: `2px solid ${isLoading || !input.trim() ? 'rgba(106,0,170,0.2)' : 'rgba(106,0,170,0.4)'}`,
-                        borderRadius: 8,
-                        fontFamily: FONT,
-                        fontSize: 16,
-                        cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.18s',
-                        boxShadow: isLoading || !input.trim() ? 'none' : '0 2px 8px rgba(255,215,0,0.3)',
-                    }}
-                >
-                    {isLoading
-                        ? (isUrl ? 'Analyzing article...' : 'Injecting...')
-                        : (isUrl ? 'Analyze with Gemini' : 'Inject News')}
-                </button>
+                {!result && !error && (
+                    <div style={{ textAlign: 'center', padding: '0 8px' }}>
+                        <div style={{ fontSize: 22, color: '#4b0082', fontFamily: FONT, marginBottom: 8 }}>
+                            Future Prediction
+                        </div>
+                        <div style={{
+                            fontSize: 12,
+                            color: '#fff',
+                            lineHeight: 1.5,
+                        }}>
+                            Put any event in here, we will tell you whatever happens,{' '}
+                            <span style={{ color: '#fff', fontWeight: 700 }}>sweet</span> or{' '}
+                            <span style={{ color: '#fff', fontWeight: 700 }}>sour</span>.
+                        </div>
+                    </div>
+                )}
 
                 {/* Error */}
                 {error && (
                     <div style={{
+                        width: '100%',
                         padding: '10px 12px',
                         background: 'rgba(163,0,0,0.06)',
                         border: '1px solid rgba(163,0,0,0.2)',
                         borderRadius: 8,
                         color: '#a30000',
                         fontSize: 11,
-                        fontFamily: "'Lobster', cursive",
                     }}>
                         Warning: {error}
                     </div>
@@ -199,6 +130,7 @@ function NewsInjector() {
                 {/* Result */}
                 {result && (
                     <div style={{
+                        width: '100%',
                         background: 'rgba(255,255,255,0.6)',
                         border: `1px solid ${BORDER}`,
                         borderRadius: 10,
@@ -211,7 +143,7 @@ function NewsInjector() {
                             background: 'rgba(255,215,0,0.25)',
                             borderBottom: `1px solid ${BORDER}`,
                         }}>
-                            <span style={{ fontSize: 11, color: '#7a4800', fontFamily: "'Lobster', cursive" }}>Sentiment</span>
+                            <span style={{ fontSize: 11, color: '#7a4800' }}>Sentiment</span>
                             <span style={{
                                 fontSize: 14, fontFamily: FONT,
                                 color: getSentimentColor(result.sentiment),
@@ -221,7 +153,6 @@ function NewsInjector() {
                         </div>
 
                         <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            {/* Gemini Analysis */}
                             {result.analysis && (
                                 <div style={{
                                     padding: '8px 10px',
@@ -229,11 +160,9 @@ function NewsInjector() {
                                     borderLeft: '3px solid rgba(0,95,163,0.4)',
                                 }}>
                                     <div style={{ fontSize: 10, color: '#005fa3', fontFamily: FONT, marginBottom: 4 }}>Gemini Analysis</div>
-                                    <div style={{ fontSize: 11, color: '#2d1a00', lineHeight: 1.5, fontFamily: "'Lobster', cursive" }}>{result.analysis}</div>
+                                    <div style={{ fontSize: 11, color: '#2d1a00', lineHeight: 1.5 }}>{result.analysis}</div>
                                 </div>
                             )}
-
-                            {/* Trade Suggestion */}
                             {result.trade_suggestion && (
                                 <div style={{
                                     padding: '8px 10px',
@@ -241,11 +170,9 @@ function NewsInjector() {
                                     borderLeft: `3px solid ${ACCENT}88`,
                                 }}>
                                     <div style={{ fontSize: 10, color: ACCENT, fontFamily: FONT, marginBottom: 4 }}>Trade Signal</div>
-                                    <div style={{ fontSize: 11, color: '#2d1a00', lineHeight: 1.5, fontFamily: "'Lobster', cursive" }}>{result.trade_suggestion}</div>
+                                    <div style={{ fontSize: 11, color: '#2d1a00', lineHeight: 1.5 }}>{result.trade_suggestion}</div>
                                 </div>
                             )}
-
-                            {/* Affected Tickers */}
                             {result.affected_tickers && result.affected_tickers.length > 0 && (
                                 <div>
                                     <div style={{ fontSize: 10, color: '#7a4800', fontFamily: FONT, marginBottom: 6 }}>Affected Tickers</div>
@@ -263,16 +190,86 @@ function NewsInjector() {
                                     </div>
                                 </div>
                             )}
-
-                            {/* Engine note */}
                             {result.message && (
-                                <div style={{ color: '#9b30d9', fontSize: 9, fontStyle: 'italic', fontFamily: "'Lobster', cursive", marginTop: 2 }}>
+                                <div style={{ color: '#9b30d9', fontSize: 9, fontStyle: 'italic', marginTop: 2 }}>
                                     {result.message}
                                 </div>
                             )}
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* ── Bottom: input area ── */}
+            <div style={{
+                flexShrink: 0,
+                padding: '12px 14px',
+                borderTop: `1.5px solid ${BORDER}`,
+                background: 'rgba(255,255,255,0.6)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+            }}>
+                {/* Mode badge */}
+                <div style={{
+                    fontSize: 10,
+                    color: isUrl ? '#005fa3' : '#7a4800',
+                    background: isUrl ? 'rgba(0,95,163,0.07)' : 'rgba(122,72,0,0.07)',
+                    padding: '3px 10px',
+                    borderRadius: 20,
+                    alignSelf: 'flex-start',
+                    border: `1px solid ${isUrl ? 'rgba(0,95,163,0.18)' : 'rgba(122,72,0,0.18)'}`,
+                    transition: 'all 0.2s',
+                }}>
+                    {isUrl ? 'URL detected — Gemini will analyze the article' : 'Paste a URL or type market news below'}
+                </div>
+
+                <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="https://cnbc.com/... or paste a headline, rumour, earnings surprise…"
+                    disabled={isLoading}
+                    rows={4}
+                    style={{
+                        width: '100%',
+                        background: 'rgba(255,255,255,0.9)',
+                        color: isUrl ? '#005fa3' : '#2d1a00',
+                        border: `2px solid ${isUrl ? 'rgba(0,95,163,0.35)' : BORDER}`,
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        fontFamily: FONT,
+                        fontSize: 12,
+                        resize: 'none',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        opacity: isLoading ? 0.5 : 1,
+                        transition: 'border-color 0.2s',
+                        boxShadow: 'inset 0 1px 4px rgba(106,0,170,0.06)',
+                    }}
+                />
+
+                <button
+                    onClick={handleInject}
+                    disabled={isLoading || !input.trim()}
+                    style={{
+                        padding: '11px 0',
+                        background: isLoading || !input.trim()
+                            ? 'rgba(106,0,170,0.08)'
+                            : '#FFD700',
+                        color: isLoading || !input.trim() ? '#9b30d9' : '#3d0066',
+                        border: `2px solid ${isLoading || !input.trim() ? 'rgba(106,0,170,0.2)' : 'rgba(106,0,170,0.4)'}`,
+                        borderRadius: 8,
+                        fontFamily: FONT,
+                        fontSize: 15,
+                        cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.18s',
+                        boxShadow: isLoading || !input.trim() ? 'none' : '0 2px 8px rgba(255,215,0,0.3)',
+                    }}
+                >
+                    {isLoading
+                        ? (isUrl ? 'Tasting the article...' : 'Tasting...')
+                        : (isUrl ? 'Sweet or Sour?' : 'Sweet or Sour?')}
+                </button>
             </div>
         </div>
     );

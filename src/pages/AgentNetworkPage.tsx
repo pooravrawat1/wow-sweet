@@ -470,12 +470,12 @@ export default function AgentNetworkPage() {
         background: PANEL_BG,
         borderRight: `1px solid ${BORDER}`,
         display: 'flex', flexDirection: 'column',
-        fontFamily: "'Lobster', cursive",
+        fontFamily: "'Leckerli One', cursive",
         overflow: 'hidden',
       }}>
         <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${BORDER}`, background: '#FFD700' }}>
           <h2 style={{ fontSize: 18, color: '#4b0082', margin: 0, fontWeight: 700, fontFamily: FONT }}>Agent Network</h2>
-          <div style={{ fontSize: 10, color: '#7a4800', marginTop: 4, fontFamily: "'Lobster', cursive" }}>
+          <div style={{ fontSize: 10, color: '#7a4800', marginTop: 4, fontFamily: "'Leckerli One', cursive" }}>
             {nodes.length} nodes &middot; {links.length} connections
           </div>
         </div>
@@ -511,7 +511,7 @@ export default function AgentNetworkPage() {
               <span style={{ fontSize: 9, color: n.type === 'whale' ? '#666' : 'transparent', flexShrink: 0, fontWeight: 600 }}>
                 {n.type === 'whale' ? 'W' : ''}
               </span>
-              <span style={{ fontSize: 9, color: n.profit >= 0 ? '#00FF7F' : '#FF4500', fontWeight: 600, flexShrink: 0, fontFamily: "'Lobster', cursive" }}>
+              <span style={{ fontSize: 9, color: n.profit >= 0 ? '#00FF7F' : '#FF4500', fontWeight: 600, flexShrink: 0, fontFamily: "'Leckerli One', cursive" }}>
                 {n.profit >= 0 ? '+' : ''}{(n.profit / 1000).toFixed(0)}K
               </span>
             </button>
@@ -561,7 +561,7 @@ export default function AgentNetworkPage() {
                 background: 'rgba(255,69,0,0.08)',
                 border: `1px solid rgba(255,69,0,0.2)`,
                 borderRadius: 4, color: '#FF4500', fontSize: 9,
-                fontWeight: 600, cursor: 'pointer', fontFamily: "'Lobster', cursive",
+                fontWeight: 600, cursor: 'pointer', fontFamily: "'Leckerli One', cursive",
               }}
             >
               Simulate Shock

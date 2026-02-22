@@ -634,7 +634,7 @@ export default function GraphPlaygroundPage() {
           alignItems: 'center',
           justifyContent: 'center',
           color: ACCENT,
-          fontFamily: "'Lobster', cursive",
+          fontFamily: "'Leckerli One', cursive",
           fontSize: 16,
         }}
       >
@@ -651,7 +651,7 @@ export default function GraphPlaygroundPage() {
         background: '#0a0a1e',
         position: 'relative',
         overflow: 'hidden',
-        fontFamily: "'Lobster', cursive",
+        fontFamily: "'Leckerli One', cursive",
       }}
     >
       {/* Full-screen graph */}
@@ -690,7 +690,7 @@ export default function GraphPlaygroundPage() {
             alignItems: 'center',
             justifyContent: 'center',
             color: '#555',
-            fontFamily: "'Lobster', cursive",
+            fontFamily: "'Leckerli One', cursive",
           }}
         >
           Initializing 3D engine...
@@ -747,7 +747,7 @@ export default function GraphPlaygroundPage() {
             />
             <span
               style={{
-                fontFamily: "'Lobster', cursive",
+                fontFamily: "'Leckerli One', cursive",
                 color: ACCENT,
                 fontSize: 14,
                 minWidth: 36,

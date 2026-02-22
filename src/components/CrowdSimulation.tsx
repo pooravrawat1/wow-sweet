@@ -258,7 +258,7 @@ export function CrowdSimulation() {
             borderRadius: 8,
             padding: '6px 10px',
             maxWidth: 180,
-            fontFamily: "'Lobster', cursive",
+            fontFamily: "'Leckerli One', cursive",
             fontSize: 10,
             lineHeight: 1.3,
             color: '#fff',

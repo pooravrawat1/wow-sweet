@@ -119,7 +119,7 @@ const Leaderboard: React.FC<{
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                fontFamily: "'Lobster', cursive",
+                fontFamily: "'Leckerli One', cursive",
                 color: whale.totalProfit >= 0 ? '#00FF7F' : '#FF4500',
               }}
             >
@@ -456,7 +456,7 @@ const AgentHeatmap: React.FC<{
                 height: Math.min(15, h),
                 fontSize: 9,
                 fontWeight: 700,
-                fontFamily: "'Lobster', cursive",
+                fontFamily: "'Leckerli One', cursive",
                 color: sectorColor,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
@@ -518,7 +518,7 @@ const AgentHeatmap: React.FC<{
                   style={{
                     fontSize: Math.min(w * 0.3, 10),
                     fontWeight: 700,
-                    fontFamily: "'Lobster', cursive",
+                    fontFamily: "'Leckerli One', cursive",
                     color: textColor,
                     lineHeight: 1,
                     textOverflow: 'ellipsis',
@@ -535,7 +535,7 @@ const AgentHeatmap: React.FC<{
                 <div
                   style={{
                     fontSize: Math.min(w * 0.22, 8),
-                    fontFamily: "'Lobster', cursive",
+                    fontFamily: "'Leckerli One', cursive",
                     color: textColor,
                     opacity: 0.8,
                     lineHeight: 1,
@@ -561,7 +561,7 @@ const AgentHeatmap: React.FC<{
               borderRadius: 6,
               padding: '8px 10px',
               fontSize: 11,
-              fontFamily: "'Lobster', cursive",
+              fontFamily: "'Leckerli One', cursive",
               color: TEXT_COLOR,
               pointerEvents: 'none',
               zIndex: 10,
@@ -724,11 +724,11 @@ const StorePressureMap: React.FC<{
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#FF69B4', fontSize: 11 }}>
             <span>Door fighting</span>
-            <span style={{ fontFamily: "'Lobster', cursive" }}>{breakdown.door}</span>
+            <span style={{ fontFamily: "'Leckerli One', cursive" }}>{breakdown.door}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#00FF7F', fontSize: 11 }}>
             <span>Inside</span>
-            <span style={{ fontFamily: "'Lobster', cursive" }}>{breakdown.inside}</span>
+            <span style={{ fontFamily: "'Leckerli One', cursive" }}>{breakdown.inside}</span>
           </div>
           <div style={{ height: 1, background: BORDER_COLOR, margin: '4px 0' }} />
           {Object.entries(breakdown.lanes).map(([lane, count]) => (
@@ -737,7 +737,7 @@ const StorePressureMap: React.FC<{
               style={{ display: 'flex', justifyContent: 'space-between', color: laneColors[lane] || '#bbb', fontSize: 10 }}
             >
               <span>{lane}</span>
-              <span style={{ fontFamily: "'Lobster', cursive" }}>{count}</span>
+              <span style={{ fontFamily: "'Leckerli One', cursive" }}>{count}</span>
             </div>
           ))}
         </div>
@@ -767,7 +767,7 @@ const StorePressureMap: React.FC<{
                 padding: '3px 2px',
                 textAlign: 'center',
                 fontSize: 8,
-                fontFamily: "'Lobster', cursive",
+                fontFamily: "'Leckerli One', cursive",
                 color: count > maxCount * 0.5 ? '#fff' : '#aaa',
                 cursor: 'pointer',
                 border: isSelected ? `2px solid ${ACCENT}` : '2px solid transparent',
@@ -1007,7 +1007,7 @@ export default function AgentReactionsPage() {
         background: PAGE_BG,
         display: 'flex',
         flexDirection: 'column',
-        fontFamily: "'Lobster', cursive",
+        fontFamily: "'Leckerli One', cursive",
         color: TEXT_COLOR,
         overflow: 'hidden',
       }}

@@ -168,7 +168,7 @@ const AgentRow: React.FC<{ entry: LeaderboardEntry }> = ({ entry }) => {
             {entry.name}
           </div>
           {entry.currentTicker && (
-            <div style={{ fontSize: 9, color: actionColors[entry.currentAction || 'BUY'] || '#7a4800', marginTop: 1, fontFamily: "'Lobster', cursive" }}>
+            <div style={{ fontSize: 9, color: actionColors[entry.currentAction || 'BUY'] || '#7a4800', marginTop: 1, fontFamily: FONT }}>
               {entry.currentAction} {entry.currentTicker}
             </div>
           )}
@@ -176,11 +176,11 @@ const AgentRow: React.FC<{ entry: LeaderboardEntry }> = ({ entry }) => {
 
         {/* P&L + win rate */}
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: entry.profit >= 0 ? '#1a7a00' : '#a30000', fontFamily: "'Lobster', cursive" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: entry.profit >= 0 ? '#1a7a00' : '#a30000', fontFamily: "'Leckerli One', cursive" }}>
             {entry.profit >= 0 ? '+' : ''}{formatProfit(entry.profit)}
           </div>
           {entry.winRate !== undefined && (
-            <div style={{ fontSize: 8, color: entry.winRate >= 0.5 ? '#1a7a00' : '#a30000', marginTop: 1, fontFamily: "'Lobster', cursive" }}>
+            <div style={{ fontSize: 8, color: entry.winRate >= 0.5 ? '#1a7a00' : '#a30000', marginTop: 1, fontFamily: "'Leckerli One', cursive" }}>
               {(entry.winRate * 100).toFixed(0)}% win
             </div>
           )}
@@ -307,7 +307,7 @@ export const AgentLeaderboard: React.FC = () => {
         {top5.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center' }}>
             <div style={{ fontSize: 12, color: '#7a4800', fontFamily: FONT }}>No agent rankings yet</div>
-            <div style={{ fontSize: 10, color: '#a06000', marginTop: 4, fontFamily: "'Lobster', cursive" }}>Loading simulation…</div>
+            <div style={{ fontSize: 10, color: '#a06000', marginTop: 4, fontFamily: FONT }}>Loading simulation…</div>
           </div>
         ) : (
           top5.map((entry) => <AgentRow key={entry.id} entry={entry} />)

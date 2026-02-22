@@ -229,7 +229,7 @@ function FuturePredictions() {
                   borderLeft: '3px solid rgba(0,95,163,0.4)',
                 }}>
                   <div style={{ fontSize: 10, color: '#005fa3', fontFamily: FONT, marginBottom: 4 }}>Gemini Analysis</div>
-                  <div style={{ fontSize: 11, color: '#2d1a00', lineHeight: 1.5, fontFamily: "'Lobster', cursive" }}>{result.analysis}</div>
+                  <div style={{ fontSize: 11, color: '#2d1a00', lineHeight: 1.5, fontFamily: "'Leckerli One', cursive" }}>{result.analysis}</div>
                 </div>
               )}
 

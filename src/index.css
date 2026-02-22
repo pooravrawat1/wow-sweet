@@ -29,7 +29,7 @@ body,
   overflow: hidden;
   background: var(--bg-dark);
   color: var(--text-primary);
-  font-family: 'Lobster', cursive;
+  font-family: 'Leckerli One', cursive;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

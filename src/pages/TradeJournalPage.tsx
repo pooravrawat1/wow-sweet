@@ -418,7 +418,7 @@ const NeuralNetworkViz: React.FC<{
       <div style={{
         width: '100%', height: '100%',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#666', fontSize: 14, fontFamily: "'Lobster', cursive",
+        color: '#666', fontSize: 14, fontFamily: "'Leckerli One', cursive",
       }}>
         Import trades to see neural network visualization
       </div>
@@ -555,7 +555,7 @@ export default function TradeJournalPage() {
   }, [trades]);
 
   return (
-    <div style={{ width: '100%', height: '100%', background: PAGE_BG, display: 'flex', overflow: 'hidden', fontFamily: "'Lobster', cursive" }}>
+    <div style={{ width: '100%', height: '100%', background: PAGE_BG, display: 'flex', overflow: 'hidden', fontFamily: "'Leckerli One', cursive" }}>
       {/* Left: Import Panel */}
       <div style={{
         width: 'clamp(260px, 28vw, 360px)' as any, borderRight: `2px solid ${BORDER}`,
@@ -566,7 +566,7 @@ export default function TradeJournalPage() {
         <h2 style={{ fontSize: 20, color: '#4b0082', margin: 0, fontFamily: FONT }}>
           Trade Journal
         </h2>
-        <p style={{ fontSize: 10, color: '#7a4800', lineHeight: 1.4, margin: 0, fontFamily: "'Lobster', cursive" }}>
+        <p style={{ fontSize: 10, color: '#7a4800', lineHeight: 1.4, margin: 0, fontFamily: "'Leckerli One', cursive" }}>
           Import notes from Obsidian (.md), TradingView (.csv), or photos of handwritten notes.
           Trades are parsed and visualized as a neural network showing what patterns lead to wins or losses.
         </p>
@@ -601,7 +601,7 @@ export default function TradeJournalPage() {
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 6, padding: 10,
-                color: '#ddd', fontSize: 11, fontFamily: "'Lobster', cursive",
+                color: '#ddd', fontSize: 11, fontFamily: "'Leckerli One', cursive",
                 lineHeight: 1.5, outline: 'none',
               }}
             />
@@ -640,7 +640,7 @@ export default function TradeJournalPage() {
               }}
             >
               Click to upload files<br />
-              <span style={{ fontSize: 9, color: '#7a4800', fontFamily: "'Lobster', cursive" }}>
+              <span style={{ fontSize: 9, color: '#7a4800', fontFamily: "'Leckerli One', cursive" }}>
                 .md (Obsidian) | .csv (TradingView) | .png/.jpg (handwritten)
               </span>
             </button>
@@ -760,7 +760,7 @@ export default function TradeJournalPage() {
         {trades.length > 0 && (
           <div style={{
             position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
-            fontSize: 9, color: '#666', fontFamily: "'Lobster', cursive",
+            fontSize: 9, color: '#666', fontFamily: "'Leckerli One', cursive",
           }}>
             Click any node to simulate a crash shock through the network
           </div>

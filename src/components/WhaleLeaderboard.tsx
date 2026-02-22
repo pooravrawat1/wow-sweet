@@ -33,7 +33,7 @@ export function WhaleLeaderboard() {
     <div style={{
       width: '100%',
       background: 'transparent',
-      fontFamily: "'Lobster', cursive",
+      fontFamily: FONT,
       overflow: 'hidden',
     }}>
       {/* Header */}
@@ -59,7 +59,6 @@ export function WhaleLeaderboard() {
             <span style={{
               fontSize: 11, fontWeight: 700, width: 16, textAlign: 'right', flexShrink: 0,
               color: rank === 0 ? '#6a00aa' : rank === 1 ? '#9b30d9' : '#7a4800',
-              fontFamily: "'Lobster', cursive",
             }}>
               {rank + 1}
             </span>
@@ -73,7 +72,7 @@ export function WhaleLeaderboard() {
               <div style={{ fontSize: 8, color: '#7a4800' }}>{whale.strategy}</div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: whale.totalProfit >= 0 ? '#1a7a00' : '#a30000', fontFamily: "'Lobster', cursive" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: whale.totalProfit >= 0 ? '#1a7a00' : '#a30000' }}>
                 {whale.totalProfit >= 0 ? '+' : ''}{whale.totalProfit.toFixed(0)}
               </div>
               <div style={{ fontSize: 7, color: '#a06000' }}>{whale.allocations.length} pos</div>
