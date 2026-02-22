@@ -137,12 +137,12 @@ function NavBar() {
         @keyframes statusPulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
       `}</style>
 
-      {/* Brand */}
+      {/* Brand + status badge */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
         fontFamily: `'Leckerli One', cursive`,
         fontSize: 22, color: '#6a00aa',
-        marginRight: 28, whiteSpace: 'nowrap',
+        whiteSpace: 'nowrap',
         letterSpacing: '0.3px',
       }}>
         <img
@@ -151,9 +151,10 @@ function NavBar() {
           style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'contain' }}
         />
         Wolf of Wall Sweet
+        <ConnectionStatusBadge />
       </div>
 
-      {/* Spacer — pushes nav + badge to the right */}
+      {/* Spacer — pushes nav links to the right */}
       <div style={{ flex: 1 }} />
 
       {/* Nav links */}
@@ -178,14 +179,6 @@ function NavBar() {
           <span className="nav-label">{item.label}</span>
         </NavLink>
       ))}
-      <div style={{ flex: 1 }} />
-      <ConnectionStatusBadge />
-      <div style={{
-        fontSize: 11, color: 'rgba(255,255,255,0.3)',
-        letterSpacing: '0.5px', marginLeft: 8,
-      }}>
-        HACKLYTICS 2026
-      </div>
     </nav>
   );
 }
