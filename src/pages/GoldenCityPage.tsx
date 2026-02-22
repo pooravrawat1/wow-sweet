@@ -11,7 +11,6 @@ import { Lollipop } from '../components/CandyIcons';
 const CandyCity = lazy(() => import('../components/CandyCity'));
 const TimeSlider = lazy(() => import('../components/TimeSlider'));
 const SectorFilter = lazy(() => import('../components/SectorFilter'));
-const Minimap = lazy(() => import('../components/Minimap'));
 const StoreDetail = lazy(() => import('../components/StoreDetail'));
 const AgentLeaderboard = lazy(() => import('../components/AgentLeaderboard'));
 const NewsInjector = lazy(() => import('../components/NewsInjector'));
@@ -53,7 +52,6 @@ export default function GoldenCityPage() {
     <div style={{ position: 'relative', width: '100%', height: '100%', background: PAGE_BG, overflow: 'hidden' }}>
       <style>{`
         @media (max-width: 768px) {
-          .city-minimap { display: none !important; }
           .city-agent-lb { display: none !important; }
         }
       `}</style>
@@ -96,36 +94,9 @@ export default function GoldenCityPage() {
         </div>
       </Suspense>
 
-      {/* Minimap overlay — bottom left, above time slider */}
+      {/* Agent leaderboard overlay — draggable, default bottom-left */}
       <Suspense fallback={null}>
-        <div
-          className="city-minimap"
-          style={{
-            position: 'absolute',
-            bottom: 72,
-            left: 16,
-            zIndex: 10,
-            pointerEvents: 'auto',
-          }}
-        >
-          <Minimap />
-        </div>
-      </Suspense>
-
-      {/* Agent leaderboard overlay — left side, above minimap */}
-      <Suspense fallback={null}>
-        <div
-          className="city-agent-lb"
-          style={{
-            position: 'absolute',
-            bottom: 260,
-            left: 16,
-            zIndex: 10,
-            pointerEvents: 'auto',
-          }}
-        >
-          <AgentLeaderboard />
-        </div>
+        <AgentLeaderboard />
       </Suspense>
 
       {/* Whale Arena Leaderboard — right side */}

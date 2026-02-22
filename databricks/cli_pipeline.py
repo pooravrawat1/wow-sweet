@@ -17,6 +17,7 @@ Steps:
     6  silver      Run silver_features.py on the cluster
     7  gold        Run gold_tickets.py on the cluster
     8  export      Run export_json.py + download frontend_payload.json
+    9  quality     Run data quality checks across all layers
     all            Run all steps in order (default)
 
 Prerequisites:
@@ -148,6 +149,29 @@ def load_env():
         print("  Go to: Databricks → User Settings → Developer → Access Tokens → Generate")
         sys.exit(1)
 
+    return host, token
+
+
+def _try_load_env():
+    """Load .env and return (host, token). Returns (None, None) if not configured (no sys.exit)."""
+    if ENV_FILE.exists():
+        raw = ENV_FILE.read_bytes()
+        if raw.startswith(b"\xef\xbb\xbf"):
+            raw = raw[3:]
+        for line in raw.decode("utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            key, val = key.strip(), val.strip()
+            if len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
+                val = val[1:-1]
+            os.environ.setdefault(key, val)
+
+    host  = os.environ.get("DATABRICKS_HOST", "").rstrip("/").split("?")[0].split("#")[0]
+    token = os.environ.get("DATABRICKS_TOKEN", "")
+    if not host or "<workspace" in host or not token or token.startswith("dapi..."):
+        return None, None
     return host, token
 
 
@@ -705,6 +729,40 @@ def cmd_check_only(client: DatabricksClient):
         warn(f"DBFS path {DBFS_DIR} is empty or does not exist (CSV not yet uploaded)")
 
 
+# ── Step 9: Data Quality ──────────────────────────────────────────────────────
+def step_quality(client: DatabricksClient, cluster_id: str):
+    """Run the data quality monitor across all layers."""
+    hdr("STEP 9 — Data Quality Checks")
+    try:
+        from data_quality_monitor import check_bronze, check_gold, check_silver, check_payload, print_summary, export_report
+    except ImportError:
+        # Fallback: import relative to this script's directory
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "data_quality_monitor", SCRIPT_DIR / "data_quality_monitor.py")
+        dqm = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dqm)
+        check_bronze = dqm.check_bronze
+        check_silver = dqm.check_silver
+        check_gold = dqm.check_gold
+        check_payload = dqm.check_payload
+        print_summary = dqm.print_summary
+        export_report = dqm.export_report
+
+    reports = []
+    if client and cluster_id:
+        reports.append(check_bronze(client, cluster_id))
+        reports.append(check_silver(client, cluster_id))
+        reports.append(check_gold(client, cluster_id))
+    reports.append(check_payload())
+
+    all_passed = print_summary(reports)
+    export_report(reports, "report")
+
+    if not all_passed:
+        warn("Some quality checks failed — review the report above")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(
@@ -713,7 +771,8 @@ def main():
         epilog=__doc__,
     )
     parser.add_argument("--step", choices=["check", "download", "upload", "schema",
-                                            "bronze", "silver", "gold", "export", "all"],
+                                            "bronze", "silver", "gold", "export",
+                                            "quality", "all"],
                         default="all", help="Which step to run (default: all)")
     parser.add_argument("--check-only", action="store_true",
                         help="Just verify connectivity and list clusters/files. No changes.")
@@ -726,15 +785,31 @@ def main():
     # Install deps first
     ensure_deps()
 
-    # Load credentials
+    step = args.step
+
+    # Quality step can run without Databricks credentials
+    if step == "quality":
+        # Try Databricks but don't require it
+        host, token = _try_load_env()
+        client = None
+        cluster_id = ""
+        if host and token:
+            try:
+                client = DatabricksClient(host, token)
+                cluster_id = client.find_cluster() if client else ""
+            except Exception:
+                warn("Could not connect to Databricks — running payload check only")
+                client = None
+        step_quality(client, cluster_id)
+        return
+
+    # Load credentials (required for all other steps)
     host, token = load_env()
     client = DatabricksClient(host, token)
 
     if args.check_only:
         cmd_check_only(client)
         return
-
-    step = args.step
 
     if step in ("check", "all"):
         cluster_id = step_check(client)
@@ -769,6 +844,11 @@ def main():
             cluster_id = step_check(client)
         step_run_notebook(client, cluster_id, "export", NOTEBOOK_SCRIPTS["export"])
         step_download_output(client)
+    if step in ("quality", "all"):
+        cid = cluster_id if "cluster_id" in locals() else ""
+        if step == "quality" and not cid:
+            cid = step_check(client)
+        step_quality(client, cid)
 
     if step == "all":
         hdr("PIPELINE COMPLETE")

@@ -8,6 +8,9 @@ import type {
   LeaderboardEntry, GraphEdge, PageName, DirectionBias,
 } from '../types';
 import { ZoomLevel } from '../types';
+import { SECTORS } from '../data/stockData';
+
+const ALL_SECTOR_NAMES = new Set(SECTORS.map((s) => s.name));
 
 interface AppStore {
   // --- Stock Data ---
@@ -23,6 +26,9 @@ interface AppStore {
   selectStock: (stock: StockData | null) => void;
   selectedSector: string | null;
   selectSector: (sector: string | null) => void;
+  visibleSectors: Set<string>;
+  setVisibleSectors: (sectors: Set<string>) => void;
+  toggleVisibleSector: (sector: string) => void;
 
   // --- Camera ---
   zoomLevel: ZoomLevel;
@@ -86,6 +92,14 @@ export const useStore = create<AppStore>((set) => ({
   selectStock: (stock) => set({ selectedStock: stock }),
   selectedSector: null,
   selectSector: (sector) => set({ selectedSector: sector }),
+  visibleSectors: ALL_SECTOR_NAMES,
+  setVisibleSectors: (sectors) => set({ visibleSectors: sectors }),
+  toggleVisibleSector: (sector) => set((s) => {
+    const next = new Set(s.visibleSectors);
+    if (next.has(sector)) next.delete(sector);
+    else next.add(sector);
+    return { visibleSectors: next };
+  }),
 
   // Camera
   zoomLevel: ZoomLevel.MACRO,

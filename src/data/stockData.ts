@@ -406,7 +406,7 @@ export function generateStockData(): StockData[] {
   }
 
   // Generate random positions using Poisson disk sampling
-  const positions = poissonDiskSample(allCompanies.length, 1000, 1000, 14.0, rand);
+  const positions = poissonDiskSample(allCompanies.length, 1800, 1800, 22.0, rand);
 
   for (let globalRank = 0; globalRank < allCompanies.length; globalRank++) {
     const { ticker, company, brandColor, sector } = allCompanies[globalRank];
@@ -543,23 +543,29 @@ interface PipelinePayload {
     ticker: string;
     company: string;
     sector: string;
-    market_cap_rank: number;
     golden_score: number;
-    ticket_levels: StockData['ticket_levels'];
     is_platinum: boolean;
-    rarity_percentile: number;
-    direction_bias: StockData['direction_bias'];
-    forward_return_distribution: StockData['forward_return_distribution'];
-    drawdown_current: number;
-    volume_percentile: number;
-    volatility_percentile: number;
-    brand_color: string;
-    store_dimensions: StockData['store_dimensions'];
+    price?: number;
+    volatility?: number;
+    ret_20d?: number;
+    max_drawdown?: number;
+    vol_spike?: number;
+    skewness?: number;
+    news_count?: number;
+    // Full pipeline fields (optional)
+    market_cap_rank?: number;
+    ticket_levels?: StockData['ticket_levels'];
+    rarity_percentile?: number;
+    direction_bias?: StockData['direction_bias'];
+    forward_return_distribution?: StockData['forward_return_distribution'];
+    brand_color?: string;
+    store_dimensions?: StockData['store_dimensions'];
     agent_density?: number;
     speed_multiplier?: number;
     technicals?: StockData['technicals'];
   }>;
-  correlation_edges: GraphEdge[];
+  edges?: GraphEdge[];
+  correlation_edges?: GraphEdge[];
 }
 
 export async function loadPipelineData(): Promise<{
@@ -571,23 +577,70 @@ export async function loadPipelineData(): Promise<{
   const payload: PipelinePayload = await res.json();
 
   const rand = seededRandom(42);
-  const positions = poissonDiskSample(payload.stocks.length, 1000, 1000, 14.0, rand);
+  const positions = poissonDiskSample(payload.stocks.length, 1800, 1800, 22.0, rand);
 
   const stocks: StockData[] = payload.stocks.map((raw, i) => {
     const pos = positions[i] || { x: rand() * 200 - 100, z: rand() * 200 - 100 };
     const companyName = COMPANY_NAME_MAP[raw.ticker] || raw.company;
+    const gs = raw.golden_score ?? 0;
+    const vol = raw.volatility ?? (0.01 + rand() * 0.04);
+    const dd = raw.max_drawdown ?? (rand() * 0.3);
+    const skew = raw.skewness ?? (rand() * 2 - 0.5);
+
+    // Derive brand color from sector if not provided
+    const brandColor = raw.brand_color
+      || SECTORS.find(s => s.name === raw.sector)?.color
+      || `hsl(${hashStr(raw.ticker) % 360}, 60%, 50%)`;
 
     return {
-      ...raw,
+      ticker: raw.ticker,
       company: companyName,
+      sector: raw.sector,
+      market_cap_rank: raw.market_cap_rank ?? i + 1,
+      golden_score: gs,
+      ticket_levels: raw.ticket_levels ?? {
+        dip_ticket: dd > 0.15,
+        shock_ticket: dd > 0.10 && (raw.vol_spike ?? 1) > 2,
+        asymmetry_ticket: skew > 0.5,
+        dislocation_ticket: (raw.ret_20d ?? 0) < -0.10,
+        convexity_ticket: gs >= 4,
+      },
+      is_platinum: raw.is_platinum ?? false,
+      rarity_percentile: raw.rarity_percentile ?? (1 - (i / payload.stocks.length)),
+      direction_bias: raw.direction_bias ?? {
+        buy: 0.4 + rand() * 0.2,
+        call: 0.15 + rand() * 0.1,
+        put: 0.1 + rand() * 0.1,
+        short: 0.05 + rand() * 0.1,
+      },
+      forward_return_distribution: raw.forward_return_distribution ?? {
+        p5: -0.15 - rand() * 0.1,
+        p25: -0.03 - rand() * 0.03,
+        median: 0.005 + rand() * 0.01,
+        p75: 0.04 + rand() * 0.03,
+        p95: 0.15 + rand() * 0.1,
+        skew: skew,
+      },
+      drawdown_current: dd,
+      volume_percentile: raw.vol_spike ? Math.min(raw.vol_spike / 5, 1) : rand(),
+      volatility_percentile: vol / 0.06,
+      brand_color: brandColor,
       candy_type: assignCandyIcon(raw.ticker, raw.sector),
       city_position: { x: pos.x, y: 0, z: pos.z },
+      store_dimensions: raw.store_dimensions ?? {
+        width: 1.5 + gs * 0.3,
+        height: 2.0 + gs * 0.6,
+        depth: 1.5 + gs * 0.3,
+      },
+      agent_density: raw.agent_density,
+      speed_multiplier: raw.speed_multiplier,
+      technicals: raw.technicals,
     };
   });
 
   return {
     stocks,
-    edges: payload.correlation_edges || [],
+    edges: payload.edges || payload.correlation_edges || [],
   };
 }
 

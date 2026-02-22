@@ -333,6 +333,8 @@ export default function StockNetworkPage() {
         className="snp-panel"
         style={{
           width: 'clamp(240px, 25vw, 400px)' as any,
+          minWidth: 240,
+          flexShrink: 0,
           background: PANEL_BG,
           borderRight: `1px solid ${BORDER_COLOR}`,
           overflowY: 'auto',

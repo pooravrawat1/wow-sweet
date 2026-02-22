@@ -1,6 +1,6 @@
 // ============================================================
-// SweetReturns — Crowd Rendering: Business-person agents
-// Body (capsule) + Head (sphere) + Briefcase (box) + Legs (2 capsules)
+// SweetReturns — Crowd Rendering: Oompa Loompa agents
+// Body (capsule) + Head (sphere) + Hair (sphere) + Legs (2 capsules)
 // 5 InstancedMeshes = 5 draw calls total for all 10,000 agents
 // ============================================================
 
@@ -16,7 +16,7 @@ const STATE_INSIDE = 3;
 const STATE_DOOR_FIGHTING = 2;
 
 export function CrowdSimulation() {
-  const { positions, velocities, colors, states, count, featuredAgents, storeAgentCounts, storeDoorCounts, storeLaneCounts, update } = useCrowdSimulation();
+  const { positions, velocities, states, count, featuredAgents, storeAgentCounts, storeDoorCounts, storeLaneCounts, update } = useCrowdSimulation();
   const setStoreCrowdData = useStore((s) => s.setStoreCrowdData);
   const crowdFrameRef = useRef(0);
   const [bubbles, setBubbles] = useState<Array<{
@@ -26,29 +26,29 @@ export function CrowdSimulation() {
 
   const bodyRef = useRef<THREE.InstancedMesh>(null);
   const headRef = useRef<THREE.InstancedMesh>(null);
-  const briefcaseRef = useRef<THREE.InstancedMesh>(null);
+  const hairRef = useRef<THREE.InstancedMesh>(null);
   const leftLegRef = useRef<THREE.InstancedMesh>(null);
   const rightLegRef = useRef<THREE.InstancedMesh>(null);
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  // Torso: wider capsule for suit jacket look
-  const bodyGeo = useMemo(() => new THREE.CapsuleGeometry(0.12, 0.18, 4, 8), []);
-  // Head
+  // Torso: wider capsule for white overalls
+  const bodyGeo = useMemo(() => new THREE.CapsuleGeometry(0.13, 0.18, 4, 8), []);
+  // Head: orange Oompa Loompa face
   const headGeo = useMemo(() => new THREE.SphereGeometry(0.08, 6, 6), []);
-  // Briefcase: small flat box
-  const briefcaseGeo = useMemo(() => new THREE.BoxGeometry(0.1, 0.07, 0.04), []);
-  // Legs: thin capsules
+  // Hair: green puff on top of head
+  const hairGeo = useMemo(() => new THREE.SphereGeometry(0.07, 6, 4), []);
+  // Legs: thin capsules (white pants)
   const legGeo = useMemo(() => new THREE.CapsuleGeometry(0.035, 0.14, 3, 6), []);
 
-  // Materials
-  const bodyMat = useMemo(() => new THREE.MeshLambertMaterial(), []);
-  const headMat = useMemo(() => new THREE.MeshLambertMaterial({ color: '#F5DEB3' }), []);
-  const briefcaseMat = useMemo(() => new THREE.MeshLambertMaterial({ color: '#4A3728' }), []);
-  const legMat = useMemo(() => new THREE.MeshLambertMaterial({ color: '#1a1a2e' }), []);
+  // Materials — Oompa Loompa palette
+  const bodyMat = useMemo(() => new THREE.MeshLambertMaterial(), []);             // per-instance white overalls
+  const headMat = useMemo(() => new THREE.MeshLambertMaterial({ color: '#D4721A' }), []);  // orange skin
+  const hairMat = useMemo(() => new THREE.MeshLambertMaterial({ color: '#2E8B57' }), []);  // green hair
+  const legMat = useMemo(() => new THREE.MeshLambertMaterial({ color: '#F0EDE5' }), []);   // white pants
 
   useFrame((_state, delta) => {
-    if (!bodyRef.current || !headRef.current || !briefcaseRef.current
+    if (!bodyRef.current || !headRef.current || !hairRef.current
         || !leftLegRef.current || !rightLegRef.current || count === 0) return;
 
     // Run physics
@@ -56,12 +56,12 @@ export function CrowdSimulation() {
 
     const bodyMesh = bodyRef.current;
     const headMesh = headRef.current;
-    const briefMesh = briefcaseRef.current;
+    const hairMesh = hairRef.current;
     const leftLeg = leftLegRef.current;
     const rightLeg = rightLegRef.current;
     const time = _state.clock.elapsedTime;
 
-    // Ensure instanceColor on body
+    // Ensure instanceColor on body (white overalls with slight variation)
     if (!bodyMesh.instanceColor) {
       bodyMesh.instanceColor = new THREE.InstancedBufferAttribute(
         new Float32Array(count * 3), 3,
@@ -72,7 +72,6 @@ export function CrowdSimulation() {
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
-      const i4 = i * 4;
       const px = positions[i3];
       const pz = positions[i3 + 2];
       const state = states[i];
@@ -83,26 +82,28 @@ export function CrowdSimulation() {
         const idleSway = Math.sin(idlePhase) * 0.008;
         const baseY = 0.22;
 
-        // Body (standing upright, no forward lean)
+        // Body (standing upright, white overalls)
         dummy.position.set(px + idleSway, baseY, pz);
         dummy.scale.set(1, 1, 1);
         dummy.rotation.set(0, 0, 0);
         dummy.updateMatrix();
         bodyMesh.setMatrixAt(i, dummy.matrix);
 
-        // Head
+        // Head (orange Oompa Loompa face)
         dummy.position.set(px + idleSway, baseY + 0.26, pz);
         dummy.updateMatrix();
         headMesh.setMatrixAt(i, dummy.matrix);
 
-        // Briefcase (at side, still)
-        dummy.position.set(px + 0.15, baseY - 0.12, pz);
+        // Hair puff (on top of head, squished sphere)
+        dummy.position.set(px + idleSway, baseY + 0.36, pz);
+        dummy.scale.set(1.0, 0.6, 1.0);
         dummy.updateMatrix();
-        briefMesh.setMatrixAt(i, dummy.matrix);
+        hairMesh.setMatrixAt(i, dummy.matrix);
 
         // Legs (standing still)
         dummy.position.set(px - 0.04, baseY - 0.18, pz);
         dummy.rotation.set(0, 0, 0);
+        dummy.scale.set(1, 1, 1);
         dummy.updateMatrix();
         leftLeg.setMatrixAt(i, dummy.matrix);
 
@@ -110,10 +111,10 @@ export function CrowdSimulation() {
         dummy.updateMatrix();
         rightLeg.setMatrixAt(i, dummy.matrix);
 
-        // Body color
-        bodyColorArray[i3] = colors[i4];
-        bodyColorArray[i3 + 1] = colors[i4 + 1];
-        bodyColorArray[i3 + 2] = colors[i4 + 2];
+        // White overalls body color
+        bodyColorArray[i3] = 0.94;
+        bodyColorArray[i3 + 1] = 0.91;
+        bodyColorArray[i3 + 2] = 0.87;
         continue;
       }
 
@@ -137,31 +138,30 @@ export function CrowdSimulation() {
       // Forward lean proportional to speed
       const lean = isFighting ? 0.2 : Math.min(0.15, speed * 0.02);
 
-      // Offsets rotated by facing angle for briefcase and legs
-      const cosF = Math.cos(facingAngle);
+      // Offsets rotated by facing angle for legs
       const sinF = Math.sin(facingAngle);
+      const cosF = Math.cos(facingAngle);
 
-      // Body (torso)
+      // Body (torso — white overalls)
       dummy.position.set(px, y, pz);
       dummy.scale.set(1, 1, 1);
       dummy.rotation.set(lean, facingAngle, 0);
       dummy.updateMatrix();
       bodyMesh.setMatrixAt(i, dummy.matrix);
 
-      // Head (on top of body)
+      // Head (on top of body — orange face)
       dummy.position.set(px, y + 0.26, pz);
       dummy.rotation.set(0, facingAngle, 0);
       dummy.updateMatrix();
       headMesh.setMatrixAt(i, dummy.matrix);
 
-      // Briefcase (at right hand, swings while running)
-      const briefSwing = Math.sin(phase + Math.PI) * 0.08;
-      const bx = px + cosF * 0.0 + sinF * 0.15;
-      const bz = pz - sinF * 0.0 + cosF * 0.15;
-      dummy.position.set(bx, y - 0.1 + briefSwing, bz);
-      dummy.rotation.set(0, facingAngle, isFighting ? 0.3 : 0);
+      // Green hair puff (on top of head, slight bob)
+      const hairBob = Math.sin(phase * 0.5) * 0.01;
+      dummy.position.set(px, y + 0.36 + hairBob, pz);
+      dummy.scale.set(1.0, 0.6, 1.0);
+      dummy.rotation.set(0, facingAngle, 0);
       dummy.updateMatrix();
-      briefMesh.setMatrixAt(i, dummy.matrix);
+      hairMesh.setMatrixAt(i, dummy.matrix);
 
       // Left leg (forward swing, offset rotated)
       const llx = px + sinF * (-0.04);
@@ -180,17 +180,18 @@ export function CrowdSimulation() {
       dummy.updateMatrix();
       rightLeg.setMatrixAt(i, dummy.matrix);
 
-      // Body color from simulation (gender/candy carry)
-      bodyColorArray[i3] = colors[i4];
-      bodyColorArray[i3 + 1] = colors[i4 + 1];
-      bodyColorArray[i3 + 2] = colors[i4 + 2];
+      // White overalls body color (with slight per-agent warmth variation)
+      const warmth = ((i * 7) % 13) / 130; // 0–0.1 subtle variation
+      bodyColorArray[i3] = 0.94 + warmth;
+      bodyColorArray[i3 + 1] = 0.91;
+      bodyColorArray[i3 + 2] = 0.87 - warmth;
     }
 
-    // Highlight featured (Gemini-powered) agents with golden body color
+    // Highlight featured (Gemini-powered) agents with golden overalls
     for (const agent of featuredAgents) {
       const idx = agent.index;
       if (idx < count) {
-        // Golden tint for AI agents
+        // Golden overalls for AI agents
         bodyColorArray[idx * 3] = 1.0;       // R
         bodyColorArray[idx * 3 + 1] = 0.84;  // G (gold)
         bodyColorArray[idx * 3 + 2] = 0.0;   // B
@@ -200,7 +201,7 @@ export function CrowdSimulation() {
     bodyMesh.instanceMatrix.needsUpdate = true;
     bodyMesh.instanceColor.needsUpdate = true;
     headMesh.instanceMatrix.needsUpdate = true;
-    briefMesh.instanceMatrix.needsUpdate = true;
+    hairMesh.instanceMatrix.needsUpdate = true;
     leftLeg.instanceMatrix.needsUpdate = true;
     rightLeg.instanceMatrix.needsUpdate = true;
 
@@ -236,15 +237,15 @@ export function CrowdSimulation() {
 
   return (
     <group>
-      {/* Agent torso (suit jacket) */}
+      {/* Oompa Loompa torso (white overalls) */}
       <instancedMesh ref={bodyRef} args={[bodyGeo, bodyMat, count]} frustumCulled={false} />
-      {/* Agent head (skin tone) */}
+      {/* Oompa Loompa head (orange skin) */}
       <instancedMesh ref={headRef} args={[headGeo, headMat, count]} frustumCulled={false} />
-      {/* Briefcase */}
-      <instancedMesh ref={briefcaseRef} args={[briefcaseGeo, briefcaseMat, count]} frustumCulled={false} />
-      {/* Left leg */}
+      {/* Oompa Loompa green hair puff */}
+      <instancedMesh ref={hairRef} args={[hairGeo, hairMat, count]} frustumCulled={false} />
+      {/* Left leg (white pants) */}
       <instancedMesh ref={leftLegRef} args={[legGeo, legMat, count]} frustumCulled={false} />
-      {/* Right leg */}
+      {/* Right leg (white pants) */}
       <instancedMesh ref={rightLegRef} args={[legGeo, legMat, count]} frustumCulled={false} />
 
       {/* Gemini AI thought bubbles */}

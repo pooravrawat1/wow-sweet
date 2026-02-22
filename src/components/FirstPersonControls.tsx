@@ -7,7 +7,7 @@ import { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const MOVE_SPEED = 90;
+const MOVE_SPEED = 130;
 const SPRINT_MULTIPLIER = 2.5;
 const EYE_HEIGHT = 2.0;
 const MOUSE_SENSITIVITY = 0.002;
