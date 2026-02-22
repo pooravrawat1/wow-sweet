@@ -4,7 +4,6 @@
 
 import { useState, useCallback, useMemo } from 'react';
 
-const PANEL_BG = 'rgba(255,255,255,0.72)';
 const ACCENT = '#6a00aa';
 const FONT = `'Leckerli One', cursive`;
 const BORDER = 'rgba(106,0,170,0.18)';
@@ -32,33 +31,45 @@ async function callGemini(prompt: string): Promise<PredictionResult> {
     }),
   });
 
-  if (!res.ok) throw new Error(`Gemini API returned ${res.status}`);
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    throw new Error(`Gemini API error ${res.status}: ${errBody.slice(0, 100)}`);
+  }
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  return JSON.parse(cleaned);
+  if (!text) throw new Error('Gemini returned empty response');
+
+  // Strip markdown fences and find JSON object
+  let cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  // If there's extra text around the JSON, extract just the object
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) cleaned = jsonMatch[0];
+
+  const result = JSON.parse(cleaned);
+  // Ensure score is a number
+  if (typeof result.score !== 'number') result.score = parseFloat(result.score) || 0;
+  return result;
 }
 
 function buildPrompt(input: string, isUrl: boolean): string {
   const context = isUrl
-    ? `Analyze this financial news URL and predict market impact: ${input}`
-    : `Analyze this market scenario and predict impact: "${input}"`;
+    ? `Analyze this financial news based on the URL. Infer the topic from the URL path, domain, and any keywords visible in it. URL: ${input}`
+    : `Analyze this market event/scenario: "${input}"`;
 
-  return `You are a senior financial analyst. ${context}
+  return `You are a senior financial analyst at a top Wall Street firm. ${context}
 
-Respond ONLY with valid JSON (no markdown, no code fences):
-{
-  "sentiment": "bullish" or "bearish" or "neutral",
-  "score": number between -1.0 and 1.0,
-  "affected_tickers": ["AAPL", "MSFT", ...up to 5 most affected stock tickers],
-  "analysis": "2-3 sentence market analysis",
-  "trade_suggestion": "1-2 sentence actionable trade idea"
-}`;
+IMPORTANT RULES:
+- The score MUST reflect real market impact. A major negative event (rate hike, earnings miss, war, recession) should have score -0.5 to -1.0. A major positive event (earnings beat, rate cut, stimulus) should have score +0.5 to +1.0. NEVER return 0 unless truly neutral.
+- Pick the score FIRST based on how markets would actually react, then write the analysis.
+- affected_tickers must be real US stock tickers that would be most impacted.
+- Be specific and actionable in trade suggestions.
+
+Respond ONLY with valid JSON (no markdown, no code fences, no explanation outside JSON):
+{"sentiment":"bullish","score":0.75,"affected_tickers":["AAPL","MSFT"],"analysis":"2-3 sentences explaining the market impact.","trade_suggestion":"1-2 sentence specific trade idea."}`;
 }
 
 function FuturePredictions() {
-  const [isOpen, setIsOpen] = useState(true);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<PredictionResult | null>(null);
@@ -107,54 +118,14 @@ function FuturePredictions() {
     }
   };
 
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        style={{
-          position: 'absolute',
-          top: 12, right: 12, zIndex: 20,
-          background: PANEL_BG, color: ACCENT,
-          border: `1px solid ${BORDER}`, borderRadius: 6,
-          padding: '5px 12px', cursor: 'pointer',
-          fontFamily: 'monospace', fontSize: 10, fontWeight: 600,
-          backdropFilter: 'blur(12px)',
-        }}
-      >
-        Predictions
-      </button>
-    );
-  }
-
   return (
     <div style={{
       width: '100%',
-      height: '100%',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
       fontFamily: FONT,
     }}>
-
-      {/* Header */}
-      <div style={{
-        background: '#FFFFFF',
-        padding: '12px 16px',
-        borderBottom: `2px solid rgba(106,0,170,0.2)`,
-        flexShrink: 0,
-      }}>
-        <span style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 0.8 }}>
-          FUTURE PREDICTIONS
-        </span>
-        <button
-          onClick={() => setIsOpen(false)}
-          style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
-        >
-          x
-        </button>
-      </div>
-
-      {/* Content */}
       <div style={{ padding: '10px 12px' }}>
         {/* Mode indicator */}
         <div style={{ fontSize: 8, color: isUrl ? '#00BFFF' : '#666', marginBottom: 4, transition: 'color 0.15s' }}>
