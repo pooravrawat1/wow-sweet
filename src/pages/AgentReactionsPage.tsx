@@ -12,11 +12,12 @@ import { getFeaturedAgents, getLatestChain, type FeaturedAgent, type ReasoningCh
 import { WHALE_ICONS } from '../components/CandyIcons';
 import type { StockData } from '../types';
 
-const PAGE_BG = '#1a1a2e';
-const PANEL_BG = '#0f0f23';
-const ACCENT = '#FFD700';
-const TEXT_COLOR = '#e0e0e0';
-const BORDER_COLOR = '#2a2a4a';
+const PAGE_BG = '#FFF8DC';
+const PANEL_BG = 'rgba(255,255,255,0.7)';
+const ACCENT = '#6a00aa';
+const TEXT_COLOR = '#2d1a00';
+const BORDER_COLOR = 'rgba(106,0,170,0.18)';
+const FONT = `'Leckerli One', cursive`;
 
 // ---- Color scale: intensity from count ----
 function pressureColor(count: number, maxCount: number): string {
@@ -118,7 +119,7 @@ const Leaderboard: React.FC<{
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                fontFamily: 'monospace',
+                fontFamily: "'Leckerli One', cursive",
                 color: whale.totalProfit >= 0 ? '#00FF7F' : '#FF4500',
               }}
             >
@@ -455,7 +456,7 @@ const AgentHeatmap: React.FC<{
                 height: Math.min(15, h),
                 fontSize: 9,
                 fontWeight: 700,
-                fontFamily: 'monospace',
+                fontFamily: "'Leckerli One', cursive",
                 color: sectorColor,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
@@ -517,7 +518,7 @@ const AgentHeatmap: React.FC<{
                   style={{
                     fontSize: Math.min(w * 0.3, 10),
                     fontWeight: 700,
-                    fontFamily: 'monospace',
+                    fontFamily: "'Leckerli One', cursive",
                     color: textColor,
                     lineHeight: 1,
                     textOverflow: 'ellipsis',
@@ -534,7 +535,7 @@ const AgentHeatmap: React.FC<{
                 <div
                   style={{
                     fontSize: Math.min(w * 0.22, 8),
-                    fontFamily: 'monospace',
+                    fontFamily: "'Leckerli One', cursive",
                     color: textColor,
                     opacity: 0.8,
                     lineHeight: 1,
@@ -560,7 +561,7 @@ const AgentHeatmap: React.FC<{
               borderRadius: 6,
               padding: '8px 10px',
               fontSize: 11,
-              fontFamily: 'monospace',
+              fontFamily: "'Leckerli One', cursive",
               color: TEXT_COLOR,
               pointerEvents: 'none',
               zIndex: 10,
@@ -723,11 +724,11 @@ const StorePressureMap: React.FC<{
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#FF69B4', fontSize: 11 }}>
             <span>Door fighting</span>
-            <span style={{ fontFamily: 'monospace' }}>{breakdown.door}</span>
+            <span style={{ fontFamily: "'Leckerli One', cursive" }}>{breakdown.door}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#00FF7F', fontSize: 11 }}>
             <span>Inside</span>
-            <span style={{ fontFamily: 'monospace' }}>{breakdown.inside}</span>
+            <span style={{ fontFamily: "'Leckerli One', cursive" }}>{breakdown.inside}</span>
           </div>
           <div style={{ height: 1, background: BORDER_COLOR, margin: '4px 0' }} />
           {Object.entries(breakdown.lanes).map(([lane, count]) => (
@@ -736,7 +737,7 @@ const StorePressureMap: React.FC<{
               style={{ display: 'flex', justifyContent: 'space-between', color: laneColors[lane] || '#bbb', fontSize: 10 }}
             >
               <span>{lane}</span>
-              <span style={{ fontFamily: 'monospace' }}>{count}</span>
+              <span style={{ fontFamily: "'Leckerli One', cursive" }}>{count}</span>
             </div>
           ))}
         </div>
@@ -766,7 +767,7 @@ const StorePressureMap: React.FC<{
                 padding: '3px 2px',
                 textAlign: 'center',
                 fontSize: 8,
-                fontFamily: 'monospace',
+                fontFamily: "'Leckerli One', cursive",
                 color: count > maxCount * 0.5 ? '#fff' : '#aaa',
                 cursor: 'pointer',
                 border: isSelected ? `2px solid ${ACCENT}` : '2px solid transparent',
@@ -989,7 +990,7 @@ export default function AgentReactionsPage() {
           alignItems: 'center',
           justifyContent: 'center',
           color: ACCENT,
-          fontFamily: 'monospace',
+          fontFamily: FONT,
           fontSize: 16,
         }}
       >
@@ -1009,7 +1010,7 @@ export default function AgentReactionsPage() {
         gridTemplateRows: '1fr 140px',
         gap: 8,
         padding: 12,
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: "'Leckerli One', cursive",
         color: TEXT_COLOR,
         overflow: 'hidden',
         boxSizing: 'border-box',

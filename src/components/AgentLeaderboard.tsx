@@ -4,7 +4,7 @@
 // Expanded view shows full trade summary with copy button.
 // ============================================================
 
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { GoldenStar } from './CandyIcons';
 import type { LeaderboardEntry, TradeRecord } from '../types';
@@ -33,18 +33,19 @@ function tradeSummaryText(entry: LeaderboardEntry): string {
 
 // ---- palette ----
 
-const ACCENT = '#FFD700';
-const PANEL_BG = 'rgba(15, 15, 35, 0.92)';
-const BORDER = 'rgba(255,255,255,0.12)';
+const ACCENT = '#6a00aa';
+const PANEL_BG = 'transparent';
+const BORDER = 'rgba(106,0,170,0.18)';
+const FONT = `'Leckerli One', cursive`;
 
 const rankColors: Record<number, string> = {
-  1: '#FFD700',
-  2: '#C0C0C0',
-  3: '#CD7F32',
+  1: '#6a00aa',
+  2: '#9b30d9',
+  3: '#c77dff',
 };
 
 const actionColors: Record<string, string> = {
-  BUY: '#00FF7F', CALL: '#00BFFF', PUT: '#FFD700', SHORT: '#FF4500',
+  BUY: '#2d7a00', CALL: '#005fa3', PUT: '#7a4800', SHORT: '#a30000',
 };
 
 const actionLabels: Record<string, string> = {
@@ -129,7 +130,7 @@ const AgentRow: React.FC<{ entry: LeaderboardEntry }> = ({ entry }) => {
   }, [entry]);
 
   return (
-    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+    <div style={{ borderBottom: `1px solid ${BORDER}` }}>
       {/* Collapsed row */}
       <button
         onClick={() => setExpanded(!expanded)}
@@ -140,9 +141,10 @@ const AgentRow: React.FC<{ entry: LeaderboardEntry }> = ({ entry }) => {
           padding: '8px 14px',
           gap: 8,
           cursor: 'pointer',
-          background: expanded ? 'rgba(255,255,255,0.03)' : 'transparent',
+          background: expanded ? 'rgba(106,0,170,0.06)' : 'transparent',
           border: 'none',
           transition: 'background 0.15s',
+          fontFamily: FONT,
         }}
       >
         {/* Rank badge */}
@@ -162,11 +164,11 @@ const AgentRow: React.FC<{ entry: LeaderboardEntry }> = ({ entry }) => {
 
         {/* Name + current position */}
         <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
-          <div style={{ fontSize: 11, color: '#eee', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: 12, color: '#3d0066', fontFamily: FONT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {entry.name}
           </div>
           {entry.currentTicker && (
-            <div style={{ fontSize: 9, color: actionColors[entry.currentAction || 'BUY'] || '#888', marginTop: 1 }}>
+            <div style={{ fontSize: 9, color: actionColors[entry.currentAction || 'BUY'] || '#7a4800', marginTop: 1, fontFamily: FONT }}>
               {entry.currentAction} {entry.currentTicker}
             </div>
           )}
@@ -174,11 +176,11 @@ const AgentRow: React.FC<{ entry: LeaderboardEntry }> = ({ entry }) => {
 
         {/* P&L + win rate */}
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: entry.profit >= 0 ? '#00FF7F' : '#FF4500' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: entry.profit >= 0 ? '#1a7a00' : '#a30000', fontFamily: "'Leckerli One', cursive" }}>
             {entry.profit >= 0 ? '+' : ''}{formatProfit(entry.profit)}
           </div>
           {entry.winRate !== undefined && (
-            <div style={{ fontSize: 8, color: entry.winRate >= 0.5 ? '#00FF7F' : '#FF4500', marginTop: 1 }}>
+            <div style={{ fontSize: 8, color: entry.winRate >= 0.5 ? '#1a7a00' : '#a30000', marginTop: 1, fontFamily: "'Leckerli One', cursive" }}>
               {(entry.winRate * 100).toFixed(0)}% win
             </div>
           )}
@@ -274,127 +276,43 @@ const AgentRow: React.FC<{ entry: LeaderboardEntry }> = ({ entry }) => {
 // ---- main component ----
 
 export const AgentLeaderboard: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(false);
   const leaderboard = useStore((s) => s.agentLeaderboard);
   const top5 = useMemo(() => leaderboard.slice(0, 5), [leaderboard]);
-  // ---- drag state ----
-  const panelRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef<{ dragging: boolean; offsetX: number; offsetY: number }>({
-    dragging: false, offsetX: 0, offsetY: 0,
-  });
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
-
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    // Only drag from header area
-    const target = e.target as HTMLElement;
-    if (target.closest('[data-no-drag]')) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    const panel = panelRef.current;
-    if (!panel) return;
-
-    const rect = panel.getBoundingClientRect();
-    dragState.current = {
-      dragging: true,
-      offsetX: e.clientX - rect.left,
-      offsetY: e.clientY - rect.top,
-    };
-    panel.setPointerCapture(e.pointerId);
-  }, []);
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragState.current.dragging) return;
-    e.preventDefault();
-    const parent = panelRef.current?.parentElement;
-    if (!parent) return;
-    const parentRect = parent.getBoundingClientRect();
-    const x = Math.max(0, Math.min(e.clientX - parentRect.left - dragState.current.offsetX, parentRect.width - 60));
-    const y = Math.max(0, Math.min(e.clientY - parentRect.top - dragState.current.offsetY, parentRect.height - 40));
-    setPos({ x, y });
-  }, []);
-
-  const onPointerUp = useCallback(() => {
-    dragState.current.dragging = false;
-  }, []);
 
   return (
-    <div
-      ref={panelRef}
-      className="city-agent-lb"
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      style={{
-        position: 'absolute',
-        left: pos ? pos.x : 16,
-        top: pos ? pos.y : undefined,
-        bottom: pos ? undefined : 80,
-        zIndex: 20,
-        width: 310,
-        background: PANEL_BG,
-        backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)',
-        border: `1px solid ${BORDER}`,
-        borderRadius: 10,
-        fontFamily: "'Inter', 'Segoe UI', sans-serif",
-        overflow: 'hidden',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-        pointerEvents: 'auto',
-        userSelect: 'none',
-        touchAction: 'none',
-      }}
-    >
-      <style>{`@keyframes lbLivePulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }`}</style>
-      {/* Draggable header */}
-      <div
-        onPointerDown={onPointerDown}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '8px 14px',
-          gap: 8,
-          background: 'rgba(255,255,255,0.04)',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          cursor: 'grab',
-        }}
-      >
-        {/* Drag handle dots */}
-        <span style={{ fontSize: 10, color: '#555', letterSpacing: 2, flexShrink: 0 }}>
-          &#x2630;
-        </span>
-        <span style={{ fontSize: 14, flexShrink: 0 }}><GoldenStar size={14} /></span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: ACCENT, letterSpacing: 0.8, flex: 1 }}>
+    <div style={{
+      width: '100%',
+      background: PANEL_BG,
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '10px 14px',
+        gap: 8,
+        background: '#fff',
+        borderBottom: `2px solid rgba(106,0,170,0.2)`,
+        flexShrink: 0,
+      }}>
+        <span style={{ fontSize: 14, flexShrink: 0 }}><GoldenStar size={16} /></span>
+        <span style={{ fontSize: 16, color: '#4b0082', fontFamily: FONT, flex: 1 }}>
           Top 5 Agents
         </span>
-        <button
-          data-no-drag
-          onClick={() => setCollapsed((c) => !c)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#888',
-            fontSize: 10,
-            cursor: 'pointer',
-            padding: '2px 4px',
-          }}
-        >
-          {collapsed ? '\u25BC' : '\u25B2'}
-        </button>
       </div>
 
       {/* List */}
-      {!collapsed && (
-        <div style={{ maxHeight: 520, overflowY: 'auto' }} data-no-drag>
-          {top5.length === 0 ? (
-            <div style={{ padding: 20, textAlign: 'center' }}>
-              <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>No agent rankings yet</div>
-              <div style={{ fontSize: 9, color: '#555' }}>Agents will appear once the simulation starts</div>
-            </div>
-          ) : (
-            top5.map((entry) => <AgentRow key={entry.id} entry={entry} />)
-          )}
-        </div>
-      )}
+      <div className="sweet-scroll" style={{ overflowY: 'visible' }}>
+        {top5.length === 0 ? (
+          <div style={{ padding: 20, textAlign: 'center' }}>
+            <div style={{ fontSize: 12, color: '#7a4800', fontFamily: FONT }}>No agent rankings yet</div>
+            <div style={{ fontSize: 10, color: '#a06000', marginTop: 4, fontFamily: FONT }}>Loading simulation…</div>
+          </div>
+        ) : (
+          top5.map((entry) => <AgentRow key={entry.id} entry={entry} />)
+        )}
+      </div>
     </div>
   );
 };

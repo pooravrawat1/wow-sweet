@@ -6,7 +6,10 @@
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 
-const PAGE_BG = '#1a1a2e';
+const PAGE_BG = '#FFF8DC';
+const ACCENT = '#6a00aa';
+const BORDER = 'rgba(106,0,170,0.18)';
+const FONT = `'Leckerli One', cursive`;
 
 interface ParsedTrade {
   id: number;
@@ -368,8 +371,8 @@ const NeuralNetworkViz: React.FC<{
         ctx.arc(node.x, node.y, drawR, 0, Math.PI * 2);
         const color = node.layer === 'input' ? '#00BFFF'
           : node.layer === 'hidden' ? '#9370DB'
-          : node.id === 'out_win' ? '#00FF7F'
-          : node.id === 'out_loss' ? '#FF4500' : '#FFD700';
+            : node.id === 'out_win' ? '#00FF7F'
+              : node.id === 'out_loss' ? '#FF4500' : '#FFD700';
         ctx.fillStyle = color;
         ctx.globalAlpha = 0.8;
         ctx.fill();
@@ -415,7 +418,7 @@ const NeuralNetworkViz: React.FC<{
       <div style={{
         width: '100%', height: '100%',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#666', fontSize: 14, fontFamily: 'monospace',
+        color: '#666', fontSize: 14, fontFamily: "'Leckerli One', cursive",
       }}>
         Import trades to see neural network visualization
       </div>
@@ -552,17 +555,18 @@ export default function TradeJournalPage() {
   }, [trades]);
 
   return (
-    <div style={{ width: '100%', height: '100%', background: PAGE_BG, display: 'flex', overflow: 'hidden' }}>
+    <div style={{ width: '100%', height: '100%', background: PAGE_BG, display: 'flex', overflow: 'hidden', fontFamily: "'Leckerli One', cursive" }}>
       {/* Left: Import Panel */}
       <div style={{
-        width: 'clamp(260px, 28vw, 360px)' as any, borderRight: '1px solid rgba(255,215,0,0.15)',
+        width: 'clamp(260px, 28vw, 360px)' as any, borderRight: `2px solid ${BORDER}`,
         padding: 16, overflowY: 'auto', flexShrink: 0,
         display: 'flex', flexDirection: 'column', gap: 12,
+        background: 'rgba(255,255,255,0.6)',
       }}>
-        <h2 style={{ fontSize: 16, color: '#FFD700', margin: 0, fontFamily: 'monospace' }}>
+        <h2 style={{ fontSize: 20, color: '#4b0082', margin: 0, fontFamily: FONT }}>
           Trade Journal
         </h2>
-        <p style={{ fontSize: 10, color: '#888', lineHeight: 1.4, margin: 0 }}>
+        <p style={{ fontSize: 10, color: '#7a4800', lineHeight: 1.4, margin: 0, fontFamily: "'Leckerli One', cursive" }}>
           Import notes from Obsidian (.md), TradingView (.csv), or photos of handwritten notes.
           Trades are parsed and visualized as a neural network showing what patterns lead to wins or losses.
         </p>
@@ -575,10 +579,10 @@ export default function TradeJournalPage() {
               onClick={() => setImportMode(mode)}
               style={{
                 flex: 1, padding: '4px 0',
-                background: importMode === mode ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${importMode === mode ? '#FFD70044' : 'rgba(255,255,255,0.1)'}`,
-                borderRadius: 4, color: importMode === mode ? '#FFD700' : '#888',
-                fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'monospace',
+                background: importMode === mode ? 'rgba(106,0,170,0.12)' : 'rgba(0,0,0,0.04)',
+                border: `1px solid ${importMode === mode ? 'rgba(106,0,170,0.3)' : BORDER}`,
+                borderRadius: 4, color: importMode === mode ? ACCENT : '#7a4800',
+                fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: FONT,
               }}
             >
               {mode === 'paste' ? 'Paste Notes' : 'Upload Files'}
@@ -597,7 +601,7 @@ export default function TradeJournalPage() {
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 6, padding: 10,
-                color: '#ddd', fontSize: 11, fontFamily: 'monospace',
+                color: '#ddd', fontSize: 11, fontFamily: "'Leckerli One', cursive",
                 lineHeight: 1.5, outline: 'none',
               }}
             />
@@ -605,11 +609,11 @@ export default function TradeJournalPage() {
               onClick={handleParse}
               style={{
                 padding: '8px 0', width: '100%',
-                background: 'rgba(255,215,0,0.15)',
-                border: '1px solid rgba(255,215,0,0.3)',
-                borderRadius: 6, color: '#FFD700',
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                fontFamily: 'monospace',
+                background: 'rgba(106,0,170,0.1)',
+                border: `1px solid rgba(106,0,170,0.3)`,
+                borderRadius: 6, color: ACCENT,
+                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                fontFamily: FONT,
               }}
             >
               Parse Trades ({rawText.split('\n').filter(l => l.trim()).length} lines)
@@ -629,14 +633,14 @@ export default function TradeJournalPage() {
               onClick={() => fileInputRef.current?.click()}
               style={{
                 padding: '20px 0', width: '100%',
-                background: 'rgba(255,255,255,0.03)',
-                border: '2px dashed rgba(255,215,0,0.3)',
-                borderRadius: 8, color: '#FFD700',
-                fontSize: 12, cursor: 'pointer', fontFamily: 'monospace',
+                background: 'rgba(106,0,170,0.06)',
+                border: `2px dashed ${BORDER}`,
+                borderRadius: 8, color: ACCENT,
+                fontSize: 12, cursor: 'pointer', fontFamily: FONT,
               }}
             >
               Click to upload files<br />
-              <span style={{ fontSize: 9, color: '#888' }}>
+              <span style={{ fontSize: 9, color: '#7a4800', fontFamily: "'Leckerli One', cursive" }}>
                 .md (Obsidian) | .csv (TradingView) | .png/.jpg (handwritten)
               </span>
             </button>
@@ -756,7 +760,7 @@ export default function TradeJournalPage() {
         {trades.length > 0 && (
           <div style={{
             position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
-            fontSize: 9, color: '#666', fontFamily: 'monospace',
+            fontSize: 9, color: '#666', fontFamily: "'Leckerli One', cursive",
           }}>
             Click any node to simulate a crash shock through the network
           </div>

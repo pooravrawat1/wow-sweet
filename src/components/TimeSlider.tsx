@@ -297,7 +297,7 @@ const dateInputStyle: React.CSSProperties = {
   fontSize: 10,
   padding: '2px 6px',
   cursor: 'pointer',
-  fontFamily: 'monospace',
+  fontFamily: "'Leckerli One', cursive",
   colorScheme: 'dark',
 };
 

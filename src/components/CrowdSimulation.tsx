@@ -48,18 +48,17 @@ export function CrowdSimulation() {
   const legMat = useMemo(() => new THREE.MeshLambertMaterial({ color: '#F0EDE5' }), []);   // white pants
 
   useFrame((_state, delta) => {
-    if (!bodyRef.current || !headRef.current
-        || !hairRef.current || !leftLegRef.current || !rightLegRef.current
-        || count === 0) return;
+    if (!bodyRef.current || !headRef.current || !hairRef.current
+      || !leftLegRef.current || !rightLegRef.current || count === 0) return;
 
     // Run physics
     update(delta);
 
-    const bodyMesh = bodyRef.current!;
-    const headMesh = headRef.current!;
-    const hairMesh = hairRef.current!;
-    const leftLeg = leftLegRef.current!;
-    const rightLeg = rightLegRef.current!;
+    const bodyMesh = bodyRef.current;
+    const headMesh = headRef.current;
+    const hairMesh = hairRef.current;
+    const leftLeg = leftLegRef.current;
+    const rightLeg = rightLegRef.current;
     const time = _state.clock.elapsedTime;
 
     // Ensure instanceColor on body (white overalls with slight variation)
@@ -259,7 +258,7 @@ export function CrowdSimulation() {
             borderRadius: 8,
             padding: '6px 10px',
             maxWidth: 180,
-            fontFamily: 'monospace',
+            fontFamily: "'Leckerli One', cursive",
             fontSize: 10,
             lineHeight: 1.3,
             color: '#fff',

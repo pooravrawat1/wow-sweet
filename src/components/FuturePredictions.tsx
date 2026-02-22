@@ -4,9 +4,10 @@
 
 import { useState, useCallback, useMemo } from 'react';
 
-const ACCENT = '#FF69B4';
-const PANEL_BG = 'rgba(15, 15, 35, 0.92)';
-const BORDER = 'rgba(255,255,255,0.08)';
+const PANEL_BG = 'rgba(255,255,255,0.72)';
+const ACCENT = '#6a00aa';
+const FONT = `'Leckerli One', cursive`;
+const BORDER = 'rgba(106,0,170,0.18)';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
@@ -97,10 +98,10 @@ function FuturePredictions() {
     switch (sentiment.toLowerCase()) {
       case 'bullish':
       case 'positive':
-        return '#00FF7F';
+        return '#1a7a00';
       case 'bearish':
       case 'negative':
-        return '#FF4500';
+        return '#a30000';
       default:
         return '#FFD700';
     }
@@ -127,16 +128,20 @@ function FuturePredictions() {
 
   return (
     <div style={{
-      position: 'absolute', top: 12, right: 12, zIndex: 20, width: 300,
-      background: PANEL_BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-      fontFamily: 'monospace', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-      overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      fontFamily: FONT,
     }}>
+
       {/* Header */}
       <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '7px 12px', borderBottom: `1px solid ${BORDER}`,
-        background: 'rgba(255,255,255,0.02)',
+        background: '#FFFFFF',
+        padding: '12px 16px',
+        borderBottom: `2px solid rgba(106,0,170,0.2)`,
+        flexShrink: 0,
       }}>
         <span style={{ color: ACCENT, fontSize: 10, fontWeight: 700, letterSpacing: 0.8 }}>
           FUTURE PREDICTIONS
@@ -156,36 +161,48 @@ function FuturePredictions() {
           {!hasKey ? 'VITE_GEMINI_API_KEY required' : isUrl ? 'URL detected — Gemini will analyze the article' : 'Paste a news URL or describe a market scenario'}
         </div>
 
+        {/* Textarea */}
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="https://cnbc.com/... or describe a market event"
           disabled={isLoading}
-          rows={3}
+          rows={5}
           style={{
             width: '100%',
-            background: 'rgba(255,255,255,0.03)',
-            color: isUrl ? '#00BFFF' : '#ddd',
-            border: `1px solid ${isUrl ? 'rgba(0,191,255,0.2)' : BORDER}`,
-            borderRadius: 4, padding: 8,
-            fontFamily: 'monospace', fontSize: 10,
-            resize: 'vertical', outline: 'none', boxSizing: 'border-box',
+            background: 'rgba(255,255,255,0.7)',
+            color: isUrl ? '#005fa3' : '#2d1a00',
+            border: `2px solid ${isUrl ? 'rgba(0,95,163,0.35)' : BORDER}`,
+            borderRadius: 8,
+            padding: '10px 12px',
+            fontFamily: "'Leckerli One', cursive",
+            fontSize: 12,
+            resize: 'vertical',
+            outline: 'none',
+            boxSizing: 'border-box',
             opacity: isLoading ? 0.5 : 1,
-            transition: 'border-color 0.15s, color 0.15s',
+            transition: 'border-color 0.2s',
+            boxShadow: 'inset 0 1px 4px rgba(106,0,170,0.06)',
           }}
         />
 
+        {/* Inject button */}
         <button
           onClick={handlePredict}
           disabled={isLoading || !input.trim()}
           style={{
-            width: '100%', marginTop: 6, padding: '6px 0',
-            background: isLoading || !input.trim() ? 'rgba(255,255,255,0.04)' : ACCENT,
-            color: isLoading || !input.trim() ? '#666' : '#0f0f23',
-            border: 'none', borderRadius: 4,
-            fontFamily: 'monospace', fontSize: 10, fontWeight: 700,
+            padding: '12px 0',
+            background: isLoading || !input.trim()
+              ? 'rgba(106,0,170,0.08)'
+              : '#FFFFFF',
+            color: isLoading || !input.trim() ? '#9b30d9' : '#3d0066',
+            border: `2px solid ${isLoading || !input.trim() ? 'rgba(106,0,170,0.2)' : 'rgba(106,0,170,0.4)'}`,
+            borderRadius: 8,
+            fontFamily: FONT,
+            fontSize: 16,
             cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
-            transition: 'background 0.15s',
+            transition: 'all 0.18s',
+            boxShadow: isLoading || !input.trim() ? 'none' : '0 2px 8px rgba(106,0,170,0.3)',
           }}
         >
           {isLoading ? (isUrl ? 'Analyzing article...' : 'Predicting...') : (isUrl ? 'Analyze with Gemini' : 'Predict')}
@@ -194,19 +211,25 @@ function FuturePredictions() {
         {/* Error */}
         {error && (
           <div style={{
-            marginTop: 6, padding: '5px 8px',
-            background: 'rgba(255,69,0,0.06)', border: '1px solid rgba(255,69,0,0.15)',
-            borderRadius: 4, color: '#FF4500', fontSize: 9,
+            padding: '10px 12px',
+            background: 'rgba(163,0,0,0.06)',
+            border: '1px solid rgba(163,0,0,0.2)',
+            borderRadius: 8,
+            color: '#a30000',
+            fontSize: 11,
+            fontFamily: "'Leckerli One', cursive",
           }}>
-            {error}
+            Warning: {error}
           </div>
         )}
 
         {/* Result */}
         {result && (
           <div style={{
-            marginTop: 6, padding: '8px',
-            background: 'rgba(255,255,255,0.02)', border: `1px solid ${BORDER}`, borderRadius: 4,
+            background: 'rgba(255,255,255,0.6)',
+            border: `1px solid ${BORDER}`,
+            borderRadius: 10,
+            overflow: 'hidden',
           }}>
             {/* Sentiment + Score */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 9 }}>
@@ -216,46 +239,48 @@ function FuturePredictions() {
               </span>
             </div>
 
-            {/* Gemini Analysis */}
-            {result.analysis && (
-              <div style={{
-                padding: '6px 8px', marginBottom: 6,
-                background: 'rgba(0,191,255,0.04)', borderRadius: 3,
-                borderLeft: '2px solid rgba(0,191,255,0.3)',
-              }}>
-                <div style={{ fontSize: 8, color: '#00BFFF', fontWeight: 600, marginBottom: 3 }}>GEMINI ANALYSIS</div>
-                <div style={{ fontSize: 9, color: '#bbb', lineHeight: 1.4 }}>{result.analysis}</div>
-              </div>
-            )}
-
-            {/* Trade Suggestion */}
-            {result.trade_suggestion && (
-              <div style={{
-                padding: '5px 8px', marginBottom: 6,
-                background: 'rgba(255,105,180,0.04)', borderRadius: 3,
-                borderLeft: `2px solid ${ACCENT}44`,
-              }}>
-                <div style={{ fontSize: 8, color: ACCENT, fontWeight: 600, marginBottom: 2 }}>TRADE SIGNAL</div>
-                <div style={{ fontSize: 9, color: '#bbb', lineHeight: 1.4 }}>{result.trade_suggestion}</div>
-              </div>
-            )}
-
-            {/* Affected Tickers */}
-            {result.affected_tickers && result.affected_tickers.length > 0 && (
-              <div style={{ marginBottom: 4 }}>
-                <div style={{ fontSize: 8, color: '#666', marginBottom: 3 }}>Affected tickers</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                  {result.affected_tickers.map((t) => (
-                    <span key={t} style={{
-                      background: 'rgba(255,105,180,0.08)', color: ACCENT,
-                      padding: '1px 5px', borderRadius: 3, fontSize: 8, fontWeight: 600,
-                    }}>
-                      {t}
-                    </span>
-                  ))}
+            <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* Gemini Analysis */}
+              {result.analysis && (
+                <div style={{
+                  padding: '8px 10px',
+                  background: 'rgba(0,95,163,0.06)', borderRadius: 6,
+                  borderLeft: '3px solid rgba(0,95,163,0.4)',
+                }}>
+                  <div style={{ fontSize: 10, color: '#005fa3', fontFamily: FONT, marginBottom: 4 }}>Gemini Analysis</div>
+                  <div style={{ fontSize: 11, color: '#2d1a00', lineHeight: 1.5, fontFamily: "'Leckerli One', cursive" }}>{result.analysis}</div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* Trade Suggestion */}
+              {result.trade_suggestion && (
+                <div style={{
+                  padding: '5px 8px', marginBottom: 6,
+                  background: 'rgba(255,105,180,0.04)', borderRadius: 3,
+                  borderLeft: `2px solid ${ACCENT}44`,
+                }}>
+                  <div style={{ fontSize: 8, color: ACCENT, fontWeight: 600, marginBottom: 2 }}>TRADE SIGNAL</div>
+                  <div style={{ fontSize: 9, color: '#bbb', lineHeight: 1.4 }}>{result.trade_suggestion}</div>
+                </div>
+              )}
+
+              {/* Affected Tickers */}
+              {result.affected_tickers && result.affected_tickers.length > 0 && (
+                <div style={{ marginBottom: 4 }}>
+                  <div style={{ fontSize: 8, color: '#666', marginBottom: 3 }}>Affected tickers</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                    {result.affected_tickers.map((t) => (
+                      <span key={t} style={{
+                        background: 'rgba(255,105,180,0.08)', color: ACCENT,
+                        padding: '1px 5px', borderRadius: 3, fontSize: 8, fontWeight: 600,
+                      }}>
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

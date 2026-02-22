@@ -52,7 +52,7 @@ export const SectorFilter: React.FC = () => {
           fontSize: 12,
           fontWeight: 600,
           cursor: 'pointer',
-          fontFamily: 'monospace',
+          fontFamily: "'Leckerli One', cursive",
           letterSpacing: 0.5,
           transition: 'all 0.15s',
           boxShadow: open ? `0 0 12px ${ACCENT}22` : 'none',
@@ -90,7 +90,7 @@ export const SectorFilter: React.FC = () => {
           border: `1px solid ${ACCENT}33`,
           borderRadius: 10,
           padding: 6,
-          fontFamily: 'monospace',
+          fontFamily: "'Leckerli One', cursive",
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}>
           {/* All / None row */}
@@ -105,7 +105,7 @@ export const SectorFilter: React.FC = () => {
               onClick={() => setVisibleSectors(new Set(SECTORS.map((s) => s.name)))}
               style={{
                 background: 'none', border: 'none', color: allSelected ? ACCENT : '#888',
-                fontSize: 10, cursor: 'pointer', padding: 0, fontFamily: 'monospace',
+                fontSize: 10, cursor: 'pointer', padding: 0, fontFamily: "'Leckerli One', cursive",
                 textTransform: 'uppercase', letterSpacing: 0.5,
               }}
             >
@@ -115,7 +115,7 @@ export const SectorFilter: React.FC = () => {
               onClick={() => setVisibleSectors(new Set())}
               style={{
                 background: 'none', border: 'none', color: noneSelected ? ACCENT : '#888',
-                fontSize: 10, cursor: 'pointer', padding: 0, fontFamily: 'monospace',
+                fontSize: 10, cursor: 'pointer', padding: 0, fontFamily: "'Leckerli One', cursive",
                 textTransform: 'uppercase', letterSpacing: 0.5,
               }}
             >

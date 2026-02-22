@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import { loadStockData, modulateStocksByTime } from './data/stockData';
 import { apiClient } from './services/apiClient';
-import { initTrackedAgents, processDay, getLeaderboard } from './services/tradeTracker';
-import { CandyCane, ChartLine, LightningBolt, WebNodes, Gumball, NoteBook, Lollipop, ChocolateBar } from './components/CandyIcons';
+import { initTrackedAgents, getLeaderboard } from './services/tradeTracker';
+import { CandyCane, ChartLine, LightningBolt, WebNodes, Gumball, NoteBook, Lollipop } from './components/CandyIcons';
 import type { PageName } from './types';
 
 const GoldenCityPage = lazy(() => import('./pages/GoldenCityPage'));
@@ -29,12 +29,12 @@ function LoadingScreen() {
       position: 'fixed', inset: 0,
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       background: '#1a1a2e', color: '#FFD700',
-      fontSize: 20, fontFamily: 'system-ui', gap: 16,
+      fontSize: 20, fontFamily: "'Leckerli One', cursive", gap: 16,
     }}>
       <div style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
         <Lollipop size={48} />
       </div>
-      <div>Loading Golden City...</div>
+      <div>Welcome to the sweets</div>
       <div style={{
         width: 160, height: 4, borderRadius: 2,
         background: 'rgba(255,215,0,0.15)', overflow: 'hidden',
@@ -120,27 +120,42 @@ function NavBar() {
 
   return (
     <nav style={{
-      position: 'fixed', top: 0, left: 0, right: 0, height: 48, zIndex: 1000,
-      background: 'rgba(16, 12, 30, 0.95)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid rgba(255, 215, 0, 0.15)',
+      position: 'fixed', top: 0, left: 0, right: 0, height: 56, zIndex: 1000,
+      background: '#fff',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.10)',
       display: 'flex', alignItems: 'center',
-      padding: '0 16px', gap: 4,
-      fontFamily: 'system-ui, -apple-system, sans-serif',
+      padding: '0 20px', gap: 4,
+      fontFamily: `'Leckerli One', cursive`,
     }}>
       <style>{`
-        .nav-link:hover { background: rgba(255, 215, 0, 0.06) !important; color: rgba(255,255,255,0.85) !important; }
-        .nav-link:focus-visible { outline: 2px solid #FFD700; outline-offset: -2px; }
+        @import url('https://fonts.googleapis.com/css2?family=Leckerli+One&display=swap');
+        .nav-link:hover { background: rgba(100, 0, 140, 0.1) !important; color: #3d0066 !important; }
+        .nav-link:focus-visible { outline: 2px solid #7b00cc; outline-offset: -2px; }
         @media (max-width: 900px) { .nav-label { display: none; } }
         @media (max-width: 600px) { .nav-link { padding: 8px 8px !important; } }
         @keyframes statusPulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
       `}</style>
+
+      {/* Brand */}
       <div style={{
-        fontWeight: 700, fontSize: 16, color: '#FFD700',
-        marginRight: 24, letterSpacing: '0.5px', whiteSpace: 'nowrap',
+        display: 'flex', alignItems: 'center', gap: 10,
+        fontFamily: `'Leckerli One', cursive`,
+        fontSize: 22, color: '#6a00aa',
+        marginRight: 28, whiteSpace: 'nowrap',
+        letterSpacing: '0.3px',
       }}>
-        <ChocolateBar size={18} /> Wolf of Wall Sweet
+        <img
+          src="/assets/favicon/favicon-96x96.png"
+          alt="logo"
+          style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'contain' }}
+        />
+        Wolf of Wall Sweet
       </div>
+
+      {/* Spacer — pushes nav + badge to the right */}
+      <div style={{ flex: 1 }} />
+
+      {/* Nav links */}
       {NAV_ITEMS.map((item) => (
         <NavLink
           key={item.path}
@@ -150,14 +165,15 @@ function NavBar() {
           className="nav-link"
           style={({ isActive }) => ({
             display: 'flex', alignItems: 'center', gap: 6,
-            padding: '8px 14px', borderRadius: 8,
-            textDecoration: 'none', fontSize: 13, fontWeight: 500,
-            color: isActive ? '#FFD700' : 'rgba(255,255,255,0.6)',
-            background: isActive ? 'rgba(255, 215, 0, 0.1)' : 'transparent',
-            transition: 'all 0.2s',
+            padding: '7px 14px', borderRadius: 8,
+            textDecoration: 'none',
+            fontFamily: `'Leckerli One', cursive`,
+            fontSize: 14,
+            color: isActive ? '#4b0082' : '#7a4800',
+            background: isActive ? 'rgba(100, 0, 160, 0.12)' : 'transparent',
+            transition: 'all 0.18s',
           })}
         >
-          <span>{item.icon}</span>
           <span className="nav-label">{item.label}</span>
         </NavLink>
       ))}
@@ -215,24 +231,14 @@ export default function App() {
     };
   }, [setStocks, setBaseStocks, setCorrelationEdges, setAgentLeaderboard, setDataSource, setBackendConnected, setDatabricksConnected]);
 
-  // Track the last processed date for trade simulation
-  const lastProcessedDate = useRef<string>('');
-
   // Time modulation: update biases when date/mode changes (without re-initializing simulation)
   useEffect(() => {
     if (baseStocks.length === 0) return;
     const modulated = modulateStocksByTime(baseStocks, timeSlider.currentDate, timeSlider.mode);
     setModulatedBiases(modulated.map((s) => s.direction_bias));
+  }, [baseStocks, timeSlider.currentDate, timeSlider.mode, setModulatedBiases]);
 
-    // Process trades when date changes
-    if (timeSlider.currentDate !== lastProcessedDate.current) {
-      lastProcessedDate.current = timeSlider.currentDate;
-      processDay(timeSlider.currentDate, modulated);
-      setAgentLeaderboard(getLeaderboard());
-    }
-  }, [baseStocks, timeSlider.currentDate, timeSlider.mode, setModulatedBiases, setAgentLeaderboard]);
-
-  const [_minLoadDone, setMinLoadDone] = useState(false);
+  const [minLoadDone, setMinLoadDone] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setMinLoadDone(true), 3000);
@@ -245,21 +251,27 @@ export default function App() {
         width: '100vw', height: '100vh',
         background: '#1a1a2e', color: '#fff',
         overflow: 'hidden',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontFamily: "'Leckerli One', cursive",
       }}>
-        <NavBar />
-        <div style={{ marginTop: 48, width: '100%', height: 'calc(100vh - 48px)' }}>
-          <Suspense fallback={<LoadingScreen />}>
-            <Routes>
-              <Route path="/" element={<GoldenCityPage />} />
-              <Route path="/network" element={<StockNetworkPage />} />
-              <Route path="/agents" element={<AgentReactionsPage />} />
-              <Route path="/agent-network" element={<AgentNetworkPage />} />
-              <Route path="/playground" element={<GraphPlaygroundPage />} />
-              <Route path="/journal" element={<TradeJournalPage />} />
-            </Routes>
-          </Suspense>
-        </div>
+        {!minLoadDone ? (
+          <LoadingScreen />
+        ) : (
+          <>
+            <NavBar />
+            <div style={{ marginTop: 56, width: '100%', height: 'calc(100vh - 56px)' }}>
+              <Suspense fallback={<LoadingScreen />}>
+                <Routes>
+                  <Route path="/" element={<GoldenCityPage />} />
+                  <Route path="/network" element={<StockNetworkPage />} />
+                  <Route path="/agents" element={<AgentReactionsPage />} />
+                  <Route path="/agent-network" element={<AgentNetworkPage />} />
+                  <Route path="/playground" element={<GraphPlaygroundPage />} />
+                  <Route path="/journal" element={<TradeJournalPage />} />
+                </Routes>
+              </Suspense>
+            </div>
+          </>
+        )}
       </div>
     </BrowserRouter>
   );

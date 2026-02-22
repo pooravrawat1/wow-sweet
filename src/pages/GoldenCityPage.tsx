@@ -1,102 +1,66 @@
 // ============================================================
-// SweetReturns — GoldenCityPage: Main city view composition
+// SweetReturns — GoldenCityPage: 3-column layout
 // ============================================================
 
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { useStore } from '../store/useStore';
 import { WhaleLeaderboard } from '../components/WhaleLeaderboard';
-import { Lollipop } from '../components/CandyIcons';
+import { AgentLeaderboard } from '../components/AgentLeaderboard';
+import NewsInjector from '../components/NewsInjector';
 
 // Lazy-load heavy 3D components
 const CandyCity = lazy(() => import('../components/CandyCity'));
 const TimeSlider = lazy(() => import('../components/TimeSlider'));
 const SectorFilter = lazy(() => import('../components/SectorFilter'));
 const StoreDetail = lazy(() => import('../components/StoreDetail'));
-const AgentLeaderboard = lazy(() => import('../components/AgentLeaderboard'));
-const FuturePredictions = lazy(() => import('../components/FuturePredictions'));
-const NewsInjector = lazy(() => import('../components/NewsInjector'));
 
-const PAGE_BG = '#1a1a2e';
-
-const LoadingFallback: React.FC = () => (
-  <div style={{
-    position: 'absolute', inset: 0,
-    display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center',
-    background: PAGE_BG, color: '#FFD700',
-    fontFamily: 'monospace', fontSize: 18, gap: 12,
-  }}>
-    <div style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
-      <Lollipop size={48} />
-    </div>
-    <div>Loading Golden City...</div>
-    <div style={{
-      width: 160, height: 4, borderRadius: 2,
-      background: 'rgba(255,215,0,0.15)', overflow: 'hidden',
-    }}>
-      <div style={{
-        width: '40%', height: '100%', background: '#FFD700',
-        borderRadius: 2, animation: 'slideRight 1.2s ease-in-out infinite',
-      }} />
-    </div>
-    <style>{`
-      @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
-      @keyframes slideRight { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
-    `}</style>
-  </div>
-);
+const FONT = `'Leckerli One', cursive`;
 
 export default function GoldenCityPage() {
   const selectedStock = useStore((s) => s.selectedStock);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', background: PAGE_BG, overflow: 'hidden' }}>
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+      fontFamily: FONT,
+      background: '#0a0a1e',
+    }}>
       <style>{`
-        @media (max-width: 768px) {
-          .city-agent-lb { display: none !important; }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Leckerli+One&display=swap');
+        .sweet-scroll::-webkit-scrollbar { width: 4px; }
+        .sweet-scroll::-webkit-scrollbar-track { background: rgba(106,0,170,0.07); border-radius: 4px; }
+        .sweet-scroll::-webkit-scrollbar-thumb { background: rgba(106,0,170,0.3); border-radius: 4px; }
       `}</style>
-      {/* Full-screen 3D candy city */}
-      <Suspense fallback={<LoadingFallback />}>
+
+      {/* ── FULL-PAGE 3D city ── */}
+      <Suspense fallback={null}>
         <div style={{ position: 'absolute', inset: 0 }}>
           <CandyCity />
         </div>
       </Suspense>
 
-      {/* Time slider overlay — fixed bottom bar */}
+      {/* Sector filter — top left (above left panel) */}
       <Suspense fallback={null}>
-        <TimeSlider />
-      </Suspense>
-
-      {/* Sector filter overlay — top left (collapsible dropdown) */}
-      <Suspense fallback={null}>
-        <div
-          style={{
-            position: 'absolute',
-            top: 12,
-            left: 16,
-            zIndex: 10,
-            pointerEvents: 'auto',
-          }}
-        >
+        <div style={{ position: 'absolute', top: 12, left: 236, zIndex: 10 }}>
           <SectorFilter />
         </div>
       </Suspense>
 
-      {/* Agent leaderboard overlay — draggable, default bottom-left */}
+      {/* Time slider — bottom center */}
       <Suspense fallback={null}>
-        <AgentLeaderboard />
+        <div style={{
+          position: 'absolute', bottom: 0,
+          left: '50%', transform: 'translateX(-50%)',
+          zIndex: 10,
+        }}>
+          <TimeSlider />
+        </div>
       </Suspense>
 
-      {/* Whale Arena Leaderboard — right side */}
-      <WhaleLeaderboard />
-
-      {/* Future Predictions — top right floating panel */}
-      <Suspense fallback={null}>
-        <FuturePredictions />
-      </Suspense>
-
-      {/* Store detail panel — shown when a stock is selected (fixed overlay) */}
+      {/* Store detail */}
       {selectedStock !== null && (
         <Suspense fallback={null}>
           <StoreDetail />
@@ -153,9 +117,7 @@ export default function GoldenCityPage() {
         zIndex: 20,
         backdropFilter: 'blur(6px)',
       }}>
-        <Suspense fallback={null}>
-          <NewsInjector />
-        </Suspense>
+        <NewsInjector />
       </div>
     </div>
   );

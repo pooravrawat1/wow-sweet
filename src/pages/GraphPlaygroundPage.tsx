@@ -808,7 +808,6 @@ export default function GraphPlaygroundPage() {
 
   return (
     <div style={{ width: '100%', height: '100%', background: '#0a0a1e', position: 'relative', overflow: 'hidden', fontFamily: 'system-ui, sans-serif' }}>
-
       {/* Full-screen graph */}
       {forceGraphReady && ForceGraph3DComponent && !fallbackMode ? (
         <ForceGraph3DComponent

@@ -10,19 +10,14 @@ import type { StockData, GraphEdge } from '../types';
 // Dynamic import holder for ForceGraph3D; loaded inside component useEffect
 let ForceGraph3D: React.ComponentType<any> | null = null;
 
-const PAGE_BG = '#1a1a2e';
-const PANEL_BG = '#0f0f23';
-const ACCENT = '#FFD700';
-const TEXT_COLOR = '#e0e0e0';
-const BORDER_COLOR = '#2a2a4a';
+const PAGE_BG = '#FFF8DC';
+const PANEL_BG = 'rgba(255,255,255,0.7)';
+const ACCENT = '#6a00aa';
+const TEXT_COLOR = '#2d1a00';
+const BORDER_COLOR = 'rgba(106,0,170,0.18)';
+const FONT = `'Leckerli One', cursive`;
 
 // ---- Pipeline step component ----
-const PIPELINE_ICONS: Record<string, string> = {
-  'Kaggle CSV': '📊',
-  'Google Colab': '🧪',
-  'Databricks': '⚡',
-  'API': '🔗',
-};
 
 const PipelineStep: React.FC<{ label: string; index: number; last?: boolean }> = ({ label, index, last }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
@@ -30,21 +25,20 @@ const PipelineStep: React.FC<{ label: string; index: number; last?: boolean }> =
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
-        padding: '8px 14px',
-        background: `linear-gradient(135deg, #1e1e3a, #16162e)`,
+        gap: 6,
+        padding: '7px 12px',
+        background: 'rgba(255,215,0,0.25)',
         border: `1px solid ${BORDER_COLOR}`,
         borderRadius: 8,
-        color: TEXT_COLOR,
+        color: ACCENT,
         fontSize: 12,
-        fontFamily: 'monospace',
+        fontFamily: FONT,
         whiteSpace: 'nowrap',
-        transition: 'border-color 0.2s, background 0.2s',
+        transition: 'border-color 0.2s',
       }}
     >
-      <span style={{ fontSize: 14 }}>{PIPELINE_ICONS[label] ?? '📦'}</span>
       <div>
-        <div style={{ color: '#888', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 1 }}>
+        <div style={{ color: 'rgba(106,0,170,0.4)', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 1, fontFamily: "'Leckerli One', cursive" }}>
           Step {index + 1}
         </div>
         <div style={{ color: ACCENT, fontWeight: 600 }}>{label}</div>
@@ -319,14 +313,15 @@ export default function StockNetworkPage() {
   }, []);
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100%', background: PAGE_BG, color: TEXT_COLOR, fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ display: 'flex', width: '100%', height: '100%', background: PAGE_BG, color: TEXT_COLOR, fontFamily: "'Leckerli One', cursive" }}>
       {/* ---- LEFT PANEL ---- */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Leckerli+One&display=swap');
         .snp-panel::-webkit-scrollbar { width: 4px; }
         .snp-panel::-webkit-scrollbar-track { background: transparent; }
         .snp-panel::-webkit-scrollbar-thumb { background: ${BORDER_COLOR}; border-radius: 2px; }
-        .snp-panel::-webkit-scrollbar-thumb:hover { background: ${ACCENT}44; }
-        .snp-sector-row:hover { background: rgba(255,215,0,0.04); }
+        .snp-panel::-webkit-scrollbar-thumb:hover { background: ${ACCENT}88; }
+        .snp-sector-row:hover { background: rgba(106,0,170,0.06); }
         .snp-toggle-btn:hover { color: ${ACCENT} !important; }
       `}</style>
       <div
@@ -336,7 +331,7 @@ export default function StockNetworkPage() {
           minWidth: 240,
           flexShrink: 0,
           background: PANEL_BG,
-          borderRight: `1px solid ${BORDER_COLOR}`,
+          borderRight: `2px solid ${BORDER_COLOR}`,
           overflowY: 'auto',
           padding: 0,
           display: 'flex',
@@ -348,19 +343,19 @@ export default function StockNetworkPage() {
         <div style={{
           padding: '16px 20px 12px',
           borderBottom: `1px solid ${BORDER_COLOR}`,
-          background: 'linear-gradient(180deg, #141430 0%, #0f0f23 100%)',
+          background: '#FFD700',
         }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: ACCENT, letterSpacing: 0.5 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#4b0082', letterSpacing: 0.5, fontFamily: FONT }}>
             Stock Network
           </h2>
-          <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: '#7a4800', marginTop: 4, fontFamily: "'Leckerli One', cursive" }}>
             {filteredStocks.length} stocks &middot; {filteredEdges.length} correlations
           </div>
         </div>
 
         {/* Model Pipeline */}
         <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_COLOR}` }}>
-          <h3 style={{ color: '#ccc', fontSize: 11, margin: '0 0 12px', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>
+          <h3 style={{ color: '#7a4800', fontSize: 11, margin: '0 0 12px', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, fontFamily: "'Leckerli One', cursive" }}>
             Data Pipeline
           </h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
@@ -374,17 +369,17 @@ export default function StockNetworkPage() {
         {/* Correlation Threshold */}
         <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_COLOR}` }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <h3 style={{ color: '#ccc', fontSize: 11, margin: 0, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>
+            <h3 style={{ color: '#7a4800', fontSize: 11, margin: 0, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, fontFamily: "'Leckerli One', cursive" }}>
               Correlation Threshold
             </h3>
             <span style={{
-              fontFamily: 'monospace',
+              fontFamily: "'Leckerli One', cursive",
               fontSize: 13,
               color: ACCENT,
-              background: '#1e1e3a',
+              background: 'rgba(255,215,0,0.12)',
               padding: '2px 8px',
               borderRadius: 4,
-              border: `1px solid ${BORDER_COLOR}`,
+              border: `1px solid rgba(255,215,0,0.3)`,
               fontWeight: 700,
             }}>
               {correlationThreshold.toFixed(2)}
@@ -403,9 +398,9 @@ export default function StockNetworkPage() {
             display: 'flex',
             justifyContent: 'space-between',
             fontSize: 10,
-            color: '#666',
+            color: '#7a4800',
             marginTop: 4,
-            fontFamily: 'monospace',
+            fontFamily: "'Leckerli One', cursive",
           }}>
             <span>0.00</span>
             <span style={{ color: '#aaa' }}>{filteredEdges.length} edges</span>
@@ -416,7 +411,7 @@ export default function StockNetworkPage() {
         {/* Sector Filters */}
         <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_COLOR}`, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <h3 style={{ color: '#ccc', fontSize: 11, margin: 0, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>
+            <h3 style={{ color: '#7a4800', fontSize: 11, margin: 0, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, fontFamily: "'Leckerli One', cursive" }}>
               Sectors
             </h3>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -430,7 +425,7 @@ export default function StockNetworkPage() {
                   fontSize: 10,
                   cursor: 'pointer',
                   padding: 0,
-                  fontFamily: 'monospace',
+                  fontFamily: "'Leckerli One', cursive",
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
                   transition: 'color 0.15s',
@@ -449,7 +444,7 @@ export default function StockNetworkPage() {
                   fontSize: 10,
                   cursor: 'pointer',
                   padding: 0,
-                  fontFamily: 'monospace',
+                  fontFamily: "'Leckerli One', cursive",
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
                   transition: 'color 0.15s',
@@ -498,7 +493,7 @@ export default function StockNetworkPage() {
                     }}
                   />
                   <span style={{ flex: 1 }}>{sector.name}</span>
-                  <span style={{ fontSize: 10, color: '#666', fontFamily: 'monospace' }}>{count}</span>
+                  <span style={{ fontSize: 10, color: '#666', fontFamily: "'Leckerli One', cursive" }}>{count}</span>
                 </label>
               );
             })}
@@ -534,7 +529,7 @@ export default function StockNetworkPage() {
                     {stock.company}
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 12, fontSize: 11, fontFamily: 'monospace' }}>
+                <div style={{ display: 'flex', gap: 12, fontSize: 11, fontFamily: "'Leckerli One', cursive" }}>
                   <div>
                     <span style={{ color: '#666' }}>Connections </span>
                     <span style={{ color: TEXT_COLOR }}>{connCount}</span>
@@ -572,7 +567,7 @@ export default function StockNetworkPage() {
               justifyContent: 'center',
               color: '#555',
               fontSize: 16,
-              fontFamily: 'monospace',
+              fontFamily: "'Leckerli One', cursive",
             }}
           >
             Loading stock network...

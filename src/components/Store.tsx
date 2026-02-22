@@ -261,7 +261,7 @@ export default function Store({ stock }: StoreProps) {
             color: '#FFE4B5',
             fontSize: 14,
             fontWeight: 700,
-            fontFamily: 'monospace',
+            fontFamily: "'Leckerli One', cursive",
             textShadow: '0 0 6px #000, 0 0 3px #000',
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
