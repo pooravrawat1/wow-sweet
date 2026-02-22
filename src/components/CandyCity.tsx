@@ -18,7 +18,7 @@ import { useStore } from '../store/useStore';
 // Skybox: large inverted sphere with a pink-to-purple gradient
 // ---------------------------------------------------------------------------
 function CandySkybox() {
-  const geometry = useMemo(() => new THREE.SphereGeometry(1600, 32, 32), []);
+  const geometry = useMemo(() => new THREE.SphereGeometry(800, 32, 32), []);
 
   const colorAttr = useMemo(() => {
     const posAttr = geometry.getAttribute('position');
@@ -31,7 +31,7 @@ function CandySkybox() {
 
     for (let i = 0; i < count; i++) {
       const y = posAttr.getY(i);
-      const t = (y + 1600) / 3200;
+      const t = (y + 800) / 1600;
       temp.copy(pink).lerp(purple, t);
       colors[i * 3] = temp.r;
       colors[i * 3 + 1] = temp.g;
@@ -104,7 +104,7 @@ function CameraController({ enabled }: { enabled: boolean }) {
       ref={controlsRef}
       maxPolarAngle={Math.PI / 2.2}
       minDistance={5}
-      maxDistance={1800}
+      maxDistance={900}
       enableDamping
       dampingFactor={0.08}
     />
@@ -120,13 +120,13 @@ export default function CandyCity() {
   return (
     <>
       <Canvas
-        camera={{ position: [0, 550, 550], fov: 60, near: 0.1, far: 3600 }}
+        camera={{ position: [0, 300, 300], fov: 60, near: 0.1, far: 1800 }}
         style={{ width: '100%', height: '100vh' }}
         gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping, powerPreference: 'high-performance' }}
         dpr={[1, 1.5]}
       >
         {/* Fog */}
-        <fog attach="fog" args={['#2a1a3a', 400, 2000]} />
+        <fog attach="fog" args={['#2a1a3a', 200, 1000]} />
 
         {/* Lighting */}
         <ambientLight intensity={0.6} color="#FFE4B5" />
