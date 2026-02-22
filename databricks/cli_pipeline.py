@@ -23,7 +23,8 @@ Steps (core pipeline):
     12  ml-correlation     Run ml_correlation_graph.py (correlation network + communities)
     13  ml-regime          Run ml_regime_detection.py (HMM market regime detection)
     14  ml-topics          Run ml_news_topics.py (BERTopic news clustering)
-    15  gold               Run gold_tickets.py (golden ticket scoring)
+    15  ml-trade           Run ml_trade_direction.py (LightGBM trade direction)
+    16  gold               Run gold_tickets.py (golden ticket scoring)
     16  gold-agents        Run gold_agent_archetypes.py (100 agent archetypes)
     17  gold-scenarios     Run gold_precompute_scenarios.py (agent decisions per scenario)
     18  export             Run export_json.py + download frontend_payload.json
@@ -33,7 +34,7 @@ Steps (core pipeline):
 Step groups:
     bronze-all         Run all bronze ingestion steps (5-8)
     silver-all         Run all silver steps (9-10)
-    ml-all             Run all ML steps (11-14)
+    ml-all             Run all ML steps (11-15)
     gold-all           Run all gold steps (15-17)
 
 Prerequisites:
@@ -84,6 +85,7 @@ NOTEBOOK_SCRIPTS = {
     "ml-correlation":   SCRIPT_DIR / "ml_correlation_graph.py",
     "ml-regime":        SCRIPT_DIR / "ml_regime_detection.py",
     "ml-topics":        SCRIPT_DIR / "ml_news_topics.py",
+    "ml-trade":         SCRIPT_DIR / "ml_trade_direction.py",
     # Extended gold
     "gold-agents":      SCRIPT_DIR / "gold_agent_archetypes.py",
     "gold-scenarios":   SCRIPT_DIR / "gold_precompute_scenarios.py",
@@ -805,7 +807,7 @@ def main():
         "check", "download", "upload", "schema",
         "bronze", "bronze-news", "bronze-reddit", "bronze-macro", "bronze-all",
         "silver", "silver-news", "silver-all",
-        "ml-sentiment", "ml-correlation", "ml-regime", "ml-topics", "ml-all",
+        "ml-sentiment", "ml-correlation", "ml-regime", "ml-topics", "ml-trade", "ml-all",
         "gold", "gold-agents", "gold-scenarios", "gold-all",
         "export", "quality", "all",
     ]
@@ -960,6 +962,13 @@ def main():
             ensure_cluster()
         step_run_notebook(client, cluster_id, "ml-topics",
                           NOTEBOOK_SCRIPTS["ml-topics"])
+
+    # ── Step 15: ML — LightGBM trade direction classifier ────────────────
+    if step in ("ml-trade", "ml-all", "all"):
+        if step == "ml-trade":
+            ensure_cluster()
+        step_run_notebook(client, cluster_id, "ml-trade",
+                          NOTEBOOK_SCRIPTS["ml-trade"])
 
     # ── Step 15: Gold — golden tickets ───────────────────────────────────
     if step in ("gold", "gold-all", "all"):

@@ -66,18 +66,22 @@ def _build_payload() -> dict:
 
     stock_rows = _query_databricks(
         """
-        SELECT ticker, sector, close, daily_return,
-               drawdown_pct, drawdown_percentile, volume_percentile, vol_percentile,
-               market_cap, golden_score,
-               dip_ticket, shock_ticket, asymmetry_ticket,
-               dislocation_ticket, convexity_ticket,
-               is_platinum,
-               fwd_return_60d,
-               bb_pct_b, zscore_20d, realized_vol_20d,
-               momentum_5d, momentum_20d
-        FROM sweetreturns.gold.golden_tickets
-        WHERE date = %s
-        ORDER BY sector, market_cap DESC
+        SELECT g.ticker, g.sector, g.close, g.daily_return,
+               g.drawdown_pct, g.drawdown_percentile, g.volume_percentile, g.vol_percentile,
+               g.market_cap, g.golden_score,
+               g.dip_ticket, g.shock_ticket, g.asymmetry_ticket,
+               g.dislocation_ticket, g.convexity_ticket,
+               g.is_platinum,
+               g.fwd_return_60d,
+               g.bb_pct_b, g.zscore_20d, g.realized_vol_20d,
+               g.momentum_5d, g.momentum_20d,
+               s.buy_prob AS ml_buy, s.call_prob AS ml_call,
+               s.put_prob AS ml_put, s.short_prob AS ml_short
+        FROM sweetreturns.gold.golden_tickets g
+        LEFT JOIN sweetreturns.gold.ml_trade_signals s
+          ON g.ticker = s.ticker AND g.date = s.date
+        WHERE g.date = %s
+        ORDER BY g.sector, g.market_cap DESC
         """,
         [latest_date],
     )
@@ -92,12 +96,20 @@ def _build_payload() -> dict:
         dd = _f(row.get("drawdown_pct"))
         vol = _f(row.get("realized_vol_20d"))
 
-        # Derive direction bias from momentum and drawdown
-        mom5 = _f(row.get("momentum_5d"))
-        buy_bias = 0.35 if mom5 > 0 else 0.2
-        short_bias = 0.15 if mom5 > 0 else 0.3
-        call_bias = 0.3 if dd < -0.1 else 0.25
-        put_bias = 1.0 - buy_bias - short_bias - call_bias
+        # Direction bias: use LightGBM ML predictions if available,
+        # fall back to momentum heuristic otherwise
+        ml_buy = row.get("ml_buy")
+        if ml_buy is not None:
+            buy_bias = _f(ml_buy, 0.25)
+            call_bias = _f(row.get("ml_call"), 0.25)
+            put_bias = _f(row.get("ml_put"), 0.25)
+            short_bias = _f(row.get("ml_short"), 0.25)
+        else:
+            mom5 = _f(row.get("momentum_5d"))
+            buy_bias = 0.35 if mom5 > 0 else 0.2
+            short_bias = 0.15 if mom5 > 0 else 0.3
+            call_bias = 0.3 if dd < -0.1 else 0.25
+            put_bias = 1.0 - buy_bias - short_bias - call_bias
 
         # Derive store dimensions from golden_score
         base_w = 1.2 + gs * 0.3
