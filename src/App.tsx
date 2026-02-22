@@ -316,7 +316,7 @@ export default function App() {
     setModulatedBiases(modulated.map((s) => s.direction_bias));
   }, [baseStocks, timeSlider.currentDate, timeSlider.mode, setModulatedBiases]);
 
-  // Process trades when date changes — drives leaderboard
+  // Process trades + update whale arena when date changes
   const stocks = useStore((s) => s.stocks);
   const geminiEnabled = useStore((s) => s.geminiEnabled);
   const lastProcessedDate = useRef<string>('');
@@ -325,16 +325,9 @@ export default function App() {
     lastProcessedDate.current = timeSlider.currentDate;
     processDay(timeSlider.currentDate, stocks);
     setAgentLeaderboard(getLeaderboard());
-  }, [stocks, timeSlider.currentDate, setAgentLeaderboard]);
-
-  // Whale arena: update allocations on init and every 15s (independent of city page)
-  useEffect(() => {
-    if (stocks.length === 0) return;
-    const runUpdate = () => updateWhaleAllocations(stocks, timeSlider.mode, geminiEnabled);
-    runUpdate(); // immediate first run
-    const interval = setInterval(runUpdate, 15000);
-    return () => clearInterval(interval);
-  }, [stocks, timeSlider.mode, geminiEnabled]);
+    // Update whale allocations + profits on every date change (drives Whale Arena during playback)
+    updateWhaleAllocations(stocks, timeSlider.mode, geminiEnabled);
+  }, [stocks, timeSlider.currentDate, timeSlider.mode, geminiEnabled, setAgentLeaderboard]);
 
   const [minLoadDone, setMinLoadDone] = useState(false);
 
